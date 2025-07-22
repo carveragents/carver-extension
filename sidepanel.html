@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regulatory Monitor</title>
+    <link rel="stylesheet" href="styles/sidepanel.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Loading State -->
+        <div id="loading" class="screen">
+            <div class="header">
+                <h1>Regulatory Monitor</h1>
+            </div>
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Loading...</p>
+            </div>
+        </div>
+
+        <!-- API Key Setup Screen -->
+        <div id="api-key-setup" class="screen hidden">
+            <div class="header">
+                <h1>Regulatory Monitor</h1>
+                <p class="subtitle">Enter your API key to get started</p>
+            </div>
+            <div class="content">
+                <div class="form-group">
+                    <label for="host-select">Environment</label>
+                    <select id="host-select">
+                        <option value="https://app.carveragents.ai">Production (app.carveragents.ai)</option>
+                        <option value="https://app.staging.carveragents.ai">Staging (app.staging.carveragents.ai)</option>
+                        <option value="http://localhost:8000">Local Development (localhost:8000)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="api-key-input">API Key</label>
+                    <input type="password" id="api-key-input" placeholder="Enter your API key">
+                    <div id="api-key-error" class="error-message hidden"></div>
+                </div>
+                <button id="validate-api-key" class="btn btn-primary">
+                    <span class="btn-text">Validate Key</span>
+                    <div class="btn-spinner hidden"></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Screen -->
+        <div id="main-dashboard" class="screen hidden">
+            <div class="header">
+                <h1>Regulatory Monitor</h1>
+                <div class="user-info">
+                    <span id="user-name"></span>
+                    <button id="settings-btn" class="icon-btn">⚙️</button>
+                </div>
+            </div>
+            
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+                <button id="regulatory-tab" class="tab-btn active">📋 Regulatory</button>
+                <button id="horizon-tab" class="tab-btn">🔭 Horizon Watch</button>
+            </div>
+            
+            <div class="content">
+                <!-- Regulatory Tab Content -->
+                <div id="regulatory-content" class="tab-content">
+                    <!-- Search Section -->
+                    <div class="search-section">
+                        <div class="search-box">
+                            <input type="text" id="tag-search" placeholder="Search for tags...">
+                            <button id="search-btn" class="icon-btn">🔍</button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="quick-actions">
+                        <button id="subscriptions-btn" class="btn btn-secondary">
+                            📌 My Subscriptions
+                        </button>
+                        <button id="refresh-btn" class="btn btn-secondary">
+                            🔄 Refresh
+                        </button>
+                    </div>
+
+                    <!-- Tag Summaries -->
+                    <div id="tag-summaries" class="tag-summaries">
+                        <!-- Tag cards will be dynamically inserted here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="empty-state" class="empty-state hidden">
+                        <p>No regulatory updates available.</p>
+                        <button id="search-tags-btn" class="btn btn-primary">Search for Tags</button>
+                    </div>
+                </div>
+
+                <!-- Horizon Watch Tab Content -->
+                <div id="horizon-content" class="tab-content hidden">
+                    <!-- Horizon Watch Header -->
+                    <div class="horizon-header">
+                        <div class="horizon-stats">
+                            <div class="stat-item">
+                                <span class="stat-number" id="total-keywords">0</span>
+                                <span class="stat-label">Keywords</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="summaries-today">0</span>
+                                <span class="stat-label">Today</span>
+                            </div>
+                        </div>
+                        <div class="horizon-actions">
+                            <button id="horizon-refresh-btn" class="btn btn-secondary btn-small">🔄 Refresh</button>
+                            <button id="add-keyword-btn" class="btn btn-primary btn-small">+ Add Keyword</button>
+                        </div>
+                    </div>
+
+                    <!-- Kind Filter -->
+                    <div class="kind-filter">
+                        <select id="kind-filter">
+                            <option value="">All Types</option>
+                            <option value="regulatory">Regulatory</option>
+                            <option value="partner">Partner</option>
+                            <option value="competition">Competition</option>
+                            <option value="vendor">Vendor</option>
+                        </select>
+                    </div>
+
+                    <!-- Keywords List -->
+                    <div id="keywords-list" class="keywords-list">
+                        <!-- Keyword items will be dynamically inserted here -->
+                    </div>
+
+                    <!-- Empty State for Horizon Watch -->
+                    <div id="horizon-empty-state" class="empty-state hidden">
+                        <div class="empty-icon">🔭</div>
+                        <h3>Start Your Horizon Watch</h3>
+                        <p>Add keywords to monitor news and developments</p>
+                        <button id="add-first-keyword-btn" class="btn btn-primary">Add Your First Keyword</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tag Details Screen -->
+        <div id="tag-details" class="screen hidden">
+            <div class="header">
+                <button id="back-btn" class="icon-btn">← Back</button>
+                <h1 id="tag-details-title"></h1>
+                <button id="subscribe-tag-btn" class="btn btn-small">
+                    <span class="subscribe-text">Subscribe</span>
+                    <span class="unsubscribe-text hidden">Unsubscribe</span>
+                </button>
+            </div>
+            
+            <div class="content">
+                <!-- Tag Meta Summary -->
+                <div class="meta-summary">
+                    <h3>Summary</h3>
+                    <p id="tag-meta-summary"></p>
+                    <small id="tag-last-updated"></small>
+                </div>
+
+                <!-- Link Summaries -->
+                <div class="link-summaries">
+                    <h3>Recent Updates</h3>
+                    <div id="link-list">
+                        <!-- Link items will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Results Screen -->
+        <div id="search-results" class="screen hidden">
+            <div class="header">
+                <button id="search-back-btn" class="icon-btn">← Back</button>
+                <h1>Browse Topics</h1>
+            </div>
+            
+            <div class="content">
+                <!-- Search Section on Search Screen -->
+                <div class="search-section">
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="Search for topics...">
+                        <button id="search-execute-btn" class="icon-btn">🔍</button>
+                    </div>
+                </div>
+                
+                <div id="search-results-list">
+                    <!-- Search results will be dynamically inserted here -->
+                </div>
+                
+                <div id="search-empty-state" class="empty-state hidden">
+                    <p>No topics found matching your search.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscriptions Screen -->
+        <div id="subscriptions-screen" class="screen hidden">
+            <div class="header">
+                <button id="subscriptions-back-btn" class="icon-btn">← Back</button>
+                <h1>My Subscriptions</h1>
+            </div>
+            
+            <div class="content">
+                <div id="subscriptions-list">
+                    <!-- Subscriptions will be dynamically inserted here -->
+                </div>
+                
+                <div id="subscriptions-empty-state" class="empty-state hidden">
+                    <p>You haven't subscribed to any tags yet.</p>
+                    <button id="browse-tags-btn" class="btn btn-primary">Browse Tags</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Keyword Modal -->
+        <div id="add-keyword-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Add Horizon Watch Keyword</h3>
+                    <button id="close-keyword-modal" class="modal-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="keyword-form">
+                        <div class="form-group">
+                            <label for="keyword-input">Keyword</label>
+                            <input type="text" id="keyword-input" placeholder="e.g., GDPR, Microsoft Teams, Tesla" required>
+                            <small>Enter a keyword to monitor for news and updates</small>
+                            <div id="keyword-input-error" class="error-message hidden"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="kind-select">Type</label>
+                            <select id="kind-select" required>
+                                <option value="">Select type...</option>
+                                <option value="regulatory">Regulatory - Laws, compliance, policies</option>
+                                <option value="partner">Partner - Business partnerships, collaborations</option>
+                                <option value="competition">Competition - Market competitors, industry news</option>
+                                <option value="vendor">Vendor - Suppliers, service providers</option>
+                            </select>
+                            <div id="kind-select-error" class="error-message hidden"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="frequency-select">Search Frequency</label>
+                            <select id="frequency-select">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancel-keyword-btn" class="btn btn-secondary">Cancel</button>
+                    <button id="save-keyword-btn" class="btn btn-primary">
+                        <span class="btn-text">Add Keyword</span>
+                        <div class="btn-spinner hidden"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Keyword Details Modal -->
+        <div id="keyword-details-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="keyword-details-title">Keyword Details</h3>
+                    <button id="close-keyword-details" class="modal-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="keyword-info">
+                        <div class="info-row">
+                            <span class="label">Keyword:</span>
+                            <span id="detail-keyword"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Type:</span>
+                            <span id="detail-kind" class="kind-badge"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Last Search:</span>
+                            <span id="detail-last-search">Never</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Schedule:</span>
+                            <span id="detail-schedule"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="meta-summary-section">
+                        <h4>Latest Summary</h4>
+                        <div id="keyword-meta-summary" class="meta-summary-content">
+                            <p class="no-summary">No summary available yet</p>
+                        </div>
+                        <div id="sentiment-indicator" class="sentiment-indicator hidden">
+                            <span class="sentiment-label" id="sentiment-label"></span>
+                            <div class="sentiment-bar">
+                                <div class="sentiment-fill" id="sentiment-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recent-summaries">
+                        <h4>Recent Updates</h4>
+                        <div id="recent-summaries-list">
+                            <!-- Recent summaries will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="trigger-search-btn" class="btn btn-secondary">
+                        <span class="btn-text">🔍 Search Now</span>
+                        <div class="btn-spinner hidden"></div>
+                    </button>
+                    <button id="edit-keyword-btn" class="btn btn-primary">Edit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen hidden">
+            <div class="header">
+                <button id="settings-back-btn" class="icon-btn">← Back</button>
+                <h1>Settings</h1>
+            </div>
+            
+            <div class="content">
+                <div class="settings-section">
+                    <h3>Account</h3>
+                    <div class="setting-item">
+                        <label for="settings-host-select">Environment</label>
+                        <select id="settings-host-select">
+                            <option value="https://app.carveragents.ai">Production (app.carveragents.ai)</option>
+                            <option value="https://app.staging.carveragents.ai">Staging (app.staging.carveragents.ai)</option>
+                            <option value="http://localhost:8000">Local Development (localhost:8000)</option>
+                        </select>
+                        <small>Changes take effect immediately</small>
+                    </div>
+                    <div class="setting-item">
+                        <label>API Key</label>
+                        <div class="api-key-display">
+                            <span id="masked-api-key">••••••••••••••••</span>
+                            <button id="show-api-key" class="btn btn-small">Show</button>
+                        </div>
+                    </div>
+                    <button id="change-api-key" class="btn btn-secondary">Change API Key</button>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Preferences</h3>
+                    <div class="setting-item">
+                        <label for="refresh-interval">Auto-refresh interval (minutes)</label>
+                        <select id="refresh-interval">
+                            <option value="5">5 minutes</option>
+                            <option value="15" selected>15 minutes</option>
+                            <option value="30">30 minutes</option>
+                            <option value="60">1 hour</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <button id="logout-btn" class="btn btn-danger">Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Screen -->
+        <div id="error-screen" class="screen hidden">
+            <div class="header">
+                <h1>Error</h1>
+            </div>
+            <div class="content">
+                <div class="error-message">
+                    <p id="error-message-text"></p>
+                    <button id="retry-btn" class="btn btn-primary">Retry</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <script src="js/sidepanel.js"></script>
+</body>
+</html>

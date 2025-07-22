@@ -1,0 +1,335 @@
+/* Content Script Styles for Regulatory Monitor - Scoped to prevent interference */
+
+/* Import Poppins font for consistency */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* Namespace all styles under .carver-extension to prevent interference */
+.carver-extension-root {
+    /* CSS Reset for extension elements only */
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    line-height: normal !important;
+    color: inherit !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    word-spacing: normal !important;
+    vertical-align: baseline !important;
+    list-style: none !important;
+    quotes: none !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    empty-cells: show !important;
+    caption-side: top !important;
+    table-layout: auto !important;
+    font-variant: normal !important;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    text-align: left !important;
+    text-indent: 0 !important;
+    white-space: normal !important;
+    direction: ltr !important;
+    unicode-bidi: normal !important;
+    -webkit-text-size-adjust: 100% !important;
+    -ms-text-size-adjust: 100% !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* Floating button - properly scoped */
+.carver-extension-root .rm-floating-button {
+    position: fixed !important;
+    bottom: 24px !important;
+    right: 24px !important;
+    width: 60px !important;
+    height: 60px !important;
+    background: #6b7280 !important;
+    border-radius: 50% !important;
+    box-shadow: 0 8px 24px rgba(107, 114, 128, 0.25) !important;
+    cursor: pointer !important;
+    z-index: 2147483647 !important; /* Maximum z-index to stay on top */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #1a1a1a !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transform: scale(0) !important;
+    opacity: 0 !important;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    border: none !important;
+    outline: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    pointer-events: auto !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    text-align: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-width: unset !important;
+    min-height: unset !important;
+    max-width: none !important;
+    max-height: none !important;
+    background-image: none !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    background-size: cover !important;
+    box-sizing: border-box !important;
+    vertical-align: baseline !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    word-spacing: normal !important;
+    line-height: 1 !important;
+}
+
+.carver-extension-root .rm-floating-button:hover {
+    transform: scale(1.05) !important;
+    box-shadow: 0 12px 32px rgba(107, 114, 128, 0.35) !important;
+    background: #4b5563 !important;
+}
+
+.carver-extension-root .rm-floating-button:active {
+    transform: scale(0.98) !important;
+}
+
+.carver-extension-root .rm-floating-button .rm-btn-icon {
+    transition: transform 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 24px !important;
+    height: 24px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.carver-extension-root .rm-floating-button:hover .rm-btn-icon {
+    transform: rotate(15deg) !important;
+}
+
+.carver-extension-root .rm-floating-button .rm-btn-tooltip {
+    position: absolute !important;
+    right: 70px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    background: #1a1a1a !important;
+    color: white !important;
+    padding: 10px 16px !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    white-space: nowrap !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.3s ease !important;
+    z-index: 2147483648 !important;
+    box-shadow: 0 4px 16px rgba(26, 26, 26, 0.2) !important;
+    text-align: center !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+    border: none !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    word-spacing: normal !important;
+    vertical-align: baseline !important;
+}
+
+.carver-extension-root .rm-floating-button:hover .rm-btn-tooltip {
+    opacity: 1 !important;
+}
+
+.carver-extension-root .rm-floating-button .rm-btn-tooltip::after {
+    content: '' !important;
+    position: absolute !important;
+    left: 100% !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    border: 6px solid transparent !important;
+    border-left-color: #1a1a1a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* SVG icon styles */
+.carver-extension-root .rm-floating-button svg {
+    width: 24px !important;
+    height: 24px !important;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 2 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    box-sizing: border-box !important;
+    vertical-align: baseline !important;
+}
+
+/* Animation classes */
+.carver-extension-root .rm-floating-button.rm-show {
+    transform: scale(1) !important;
+    opacity: 1 !important;
+}
+
+.carver-extension-root .rm-floating-button.rm-hide {
+    transform: scale(0) !important;
+    opacity: 0 !important;
+}
+
+/* Responsive positioning */
+@media (max-width: 768px) {
+    .carver-extension-root .rm-floating-button {
+        bottom: 20px !important;
+        right: 20px !important;
+        width: 56px !important;
+        height: 56px !important;
+    }
+    
+    .carver-extension-root .rm-floating-button svg {
+        width: 22px !important;
+        height: 22px !important;
+    }
+    
+    .carver-extension-root .rm-floating-button .rm-btn-tooltip {
+        right: 66px !important;
+        font-size: 12px !important;
+        padding: 8px 12px !important;
+    }
+}
+
+/* Special handling for small screens */
+@media (max-width: 480px) {
+    .carver-extension-root .rm-floating-button {
+        bottom: 16px !important;
+        right: 16px !important;
+        width: 52px !important;
+        height: 52px !important;
+    }
+    
+    .carver-extension-root .rm-floating-button svg {
+        width: 20px !important;
+        height: 20px !important;
+    }
+    
+    .carver-extension-root .rm-floating-button .rm-btn-tooltip {
+        right: 62px !important;
+        font-size: 11px !important;
+        padding: 6px 10px !important;
+    }
+}
+
+/* Additional safeguards to prevent style inheritance */
+.carver-extension-root * {
+    all: unset !important;
+}
+
+.carver-extension-root .rm-floating-button,
+.carver-extension-root .rm-floating-button *,
+.carver-extension-root .rm-btn-tooltip,
+.carver-extension-root .rm-btn-tooltip * {
+    /* Re-apply only the styles we need */
+    box-sizing: border-box !important;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Prevent any potential conflicts with common CSS resets */
+.carver-extension-root .rm-floating-button {
+    /* Override any potential conflicts */
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    resize: none !important;
+    font-feature-settings: normal !important;
+    font-kerning: auto !important;
+    font-language-override: normal !important;
+    font-optical-sizing: auto !important;
+    font-size-adjust: none !important;
+    font-stretch: normal !important;
+    font-synthesis: weight style !important;
+    font-variant-alternates: normal !important;
+    font-variant-caps: normal !important;
+    font-variant-east-asian: normal !important;
+    font-variant-ligatures: normal !important;
+    font-variant-numeric: normal !important;
+    font-variant-position: normal !important;
+    font-variation-settings: normal !important;
+    -webkit-font-feature-settings: normal !important;
+    -webkit-font-kerning: auto !important;
+    -webkit-font-smoothing: antialiased !important;
+    -webkit-font-variant-ligatures: normal !important;
+    -moz-font-feature-settings: normal !important;
+    -moz-font-language-override: normal !important;
+    -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .carver-extension-root .rm-floating-button {
+        background: #ffffff !important;
+        color: #1a1a1a !important;
+        box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15) !important;
+    }
+    
+    .carver-extension-root .rm-floating-button:hover {
+        background: #f3f4f6 !important;
+        box-shadow: 0 12px 32px rgba(255, 255, 255, 0.25) !important;
+    }
+    
+    .carver-extension-root .rm-floating-button .rm-btn-tooltip {
+        background: #ffffff !important;
+        color: #1a1a1a !important;
+        box-shadow: 0 4px 16px rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    .carver-extension-root .rm-floating-button .rm-btn-tooltip::after {
+        border-left-color: #ffffff !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .carver-extension-root .rm-floating-button {
+        border: 2px solid currentColor !important;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .carver-extension-root .rm-floating-button,
+    .carver-extension-root .rm-floating-button *,
+    .carver-extension-root .rm-btn-tooltip {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Print styles - hide extension button when printing */
+@media print {
+    .carver-extension-root .rm-floating-button {
+        display: none !important;
+    }
+}
+
+/* Focus states for accessibility */
+.carver-extension-root .rm-floating-button:focus-visible {
+    outline: 2px solid #ffffff !important;
+    outline-offset: 4px !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .carver-extension-root .rm-floating-button:focus-visible {
+        outline: 2px solid #1a1a1a !important;
+    }
+}
