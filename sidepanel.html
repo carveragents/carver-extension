@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Regulatory Monitor</title>
+    <title>Carver</title>
     <link rel="stylesheet" href="styles/sidepanel.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
         <!-- Loading State -->
         <div id="loading" class="screen">
             <div class="header">
-                <h1>Regulatory Monitor</h1>
+                <h1>Carver</h1>
             </div>
             <div class="loading-spinner">
                 <div class="spinner"></div>
@@ -22,10 +22,19 @@
         <!-- API Key Setup Screen -->
         <div id="api-key-setup" class="screen hidden">
             <div class="header">
-                <h1>Regulatory Monitor</h1>
-                <p class="subtitle">Enter your API key to get started</p>
+                <div class="logo-title">
+                    <img src="icons/icon32.png" alt="Carver" class="logo">
+                    <h1>Carver</h1>
+                </div>
+                <div class="header-actions">
+                    <button id="support-btn-setup" class="icon-btn" title="Support">📧</button>
+                </div>
             </div>
             <div class="content">
+                <div class="welcome-section">
+                    <p class="welcome-title">AI-powered market intelligence for financial services</p>
+                    <p class="welcome-message">Stay informed with real-time regulatory updates, partner monitoring, and actionable insights. Get started by entering your API key below.</p>
+                </div>
                 <div class="form-group">
                     <label for="host-select">Environment</label>
                     <select id="host-select">
@@ -43,44 +52,52 @@
                     <span class="btn-text">Validate Key</span>
                     <div class="btn-spinner hidden"></div>
                 </button>
+                
+                <div class="footer-links">
+                    <a href="https://carveragents.ai/terms" target="_blank" rel="noopener noreferrer">Terms & Conditions</a>
+                    <span class="separator">•</span>
+                    <a href="https://carveragents.ai/" target="_blank" rel="noopener noreferrer">Visit Website</a>
+                    <span class="separator">•</span>
+                    <span class="version-info" id="api-version"></span>
+                </div>
             </div>
         </div>
 
         <!-- Main Dashboard Screen -->
         <div id="main-dashboard" class="screen hidden">
             <div class="header">
-                <h1>Regulatory Monitor</h1>
+                <div class="logo-title">
+                    <img src="icons/icon32.png" alt="Carver" class="logo">
+                    <h1>Carver</h1>
+                </div>
                 <div class="user-info">
                     <span id="user-name"></span>
-                    <button id="settings-btn" class="icon-btn">⚙️</button>
+                    <button id="support-btn" class="icon-btn" title="Support">📧</button>
+                    <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
                 </div>
             </div>
             
             <!-- Tab Navigation -->
             <div class="tab-navigation">
                 <button id="regulatory-tab" class="tab-btn active">📋 Regulatory</button>
-                <button id="horizon-tab" class="tab-btn">🔭 Horizon Watch</button>
+                <button id="horizon-tab" class="tab-btn">🔭 Partner Watch</button>
             </div>
             
             <div class="content">
                 <!-- Regulatory Tab Content -->
                 <div id="regulatory-content" class="tab-content">
-                    <!-- Search Section -->
-                    <div class="search-section">
+                    <!-- Topics Header with Search -->
+                    <div class="topics-header">
                         <div class="search-box">
-                            <input type="text" id="tag-search" placeholder="Search for tags...">
-                            <button id="search-btn" class="icon-btn">🔍</button>
+                            <input type="text" id="topics-search-input" placeholder="Search for regulatory feeds...">
+                            <div id="topics-suggestions" class="topics-suggestions hidden">
+                                <!-- Topic suggestions will be dynamically inserted here -->
+                            </div>
                         </div>
-                    </div>
-
-                    <!-- Quick Actions -->
-                    <div class="quick-actions">
-                        <button id="subscriptions-btn" class="btn btn-secondary">
-                            📌 My Subscriptions
-                        </button>
-                        <button id="refresh-btn" class="btn btn-secondary">
-                            🔄 Refresh
-                        </button>
+                        <div class="topics-actions">
+                            <button id="subscriptions-btn" class="icon-btn" title="My Subscriptions">📌</button>
+                            <button id="refresh-btn" class="icon-btn" title="Refresh Topics">🔄</button>
+                        </div>
                     </div>
 
                     <!-- Tag Summaries -->
@@ -90,53 +107,50 @@
 
                     <!-- Empty State -->
                     <div id="empty-state" class="empty-state hidden">
-                        <p>No regulatory updates available.</p>
-                        <button id="search-tags-btn" class="btn btn-primary">Search for Tags</button>
+                        <div class="empty-icon">📊</div>
+                        <h3>Start Monitoring Topics</h3>
+                        <p>Search for regulatory topics to monitor</p>
+                        <button id="search-topics-btn" class="btn btn-primary">Search Topics</button>
+                    </div>
+                    
+                    <!-- Version Info for Regulatory Tab -->
+                    <div class="tab-version-info">
+                        <span class="version-info" id="regulatory-version"></span>
                     </div>
                 </div>
 
-                <!-- Horizon Watch Tab Content -->
+                <!-- Partner Watch Tab Content -->
                 <div id="horizon-content" class="tab-content hidden">
-                    <!-- Horizon Watch Header -->
-                    <div class="horizon-header">
-                        <div class="horizon-stats">
-                            <div class="stat-item">
-                                <span class="stat-number" id="total-keywords">0</span>
-                                <span class="stat-label">Keywords</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-number" id="summaries-today">0</span>
-                                <span class="stat-label">Today</span>
+                    <!-- Partner Header with Search -->
+                    <div class="partner-header">
+                        <div class="search-box">
+                            <input type="text" id="partner-search-input" placeholder="Search for partners...">
+                            <div id="partner-suggestions" class="partner-suggestions hidden">
+                                <!-- Partner suggestions will be dynamically inserted here -->
                             </div>
                         </div>
-                        <div class="horizon-actions">
-                            <button id="horizon-refresh-btn" class="btn btn-secondary btn-small">🔄 Refresh</button>
-                            <button id="add-keyword-btn" class="btn btn-primary btn-small">+ Add Keyword</button>
+                        <div class="partner-actions">
+                            <button id="horizon-refresh-btn" class="icon-btn" title="Refresh Partners">🔄</button>
+                            <button id="add-partner-btn" class="icon-btn" title="Add Partner">+</button>
                         </div>
                     </div>
 
-                    <!-- Kind Filter -->
-                    <div class="kind-filter">
-                        <select id="kind-filter">
-                            <option value="">All Types</option>
-                            <option value="regulatory">Regulatory</option>
-                            <option value="partner">Partner</option>
-                            <option value="competition">Competition</option>
-                            <option value="vendor">Vendor</option>
-                        </select>
+                    <!-- Partners List -->
+                    <div id="partners-list" class="partners-list">
+                        <!-- Partner items will be dynamically inserted here -->
                     </div>
 
-                    <!-- Keywords List -->
-                    <div id="keywords-list" class="keywords-list">
-                        <!-- Keyword items will be dynamically inserted here -->
+                    <!-- Empty State for Partner Watch -->
+                    <div id="partner-empty-state" class="empty-state hidden">
+                        <div class="empty-icon">🤝</div>
+                        <h3>Start Your Partner Watch</h3>
+                        <p>Add partners to monitor news and developments</p>
+                        <button id="add-first-partner-btn" class="btn btn-primary">Add Your First Partner</button>
                     </div>
-
-                    <!-- Empty State for Horizon Watch -->
-                    <div id="horizon-empty-state" class="empty-state hidden">
-                        <div class="empty-icon">🔭</div>
-                        <h3>Start Your Horizon Watch</h3>
-                        <p>Add keywords to monitor news and developments</p>
-                        <button id="add-first-keyword-btn" class="btn btn-primary">Add Your First Keyword</button>
+                    
+                    <!-- Version Info for Partner Watch Tab -->
+                    <div class="tab-version-info">
+                        <span class="version-info" id="partner-version"></span>
                     </div>
                 </div>
             </div>
@@ -154,6 +168,11 @@
             </div>
             
             <div class="content">
+                <!-- Tag Description -->
+                <div class="tag-description">
+                    <p id="tag-description"></p>
+                </div>
+                
                 <!-- Tag Meta Summary -->
                 <div class="meta-summary">
                     <h3>Summary</h3>
@@ -216,32 +235,55 @@
             </div>
         </div>
 
-        <!-- Add Keyword Modal -->
-        <div id="add-keyword-modal" class="modal hidden">
+        <!-- Edit Partner Modal -->
+        <div id="edit-partner-modal" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Add Horizon Watch Keyword</h3>
-                    <button id="close-keyword-modal" class="modal-close">×</button>
+                    <h3>Edit Partner</h3>
+                    <button id="close-edit-partner-modal" class="modal-close">×</button>
                 </div>
                 <div class="modal-body">
-                    <form id="keyword-form">
+                    <form id="edit-partner-form">
                         <div class="form-group">
-                            <label for="keyword-input">Keyword</label>
-                            <input type="text" id="keyword-input" placeholder="e.g., GDPR, Microsoft Teams, Tesla" required>
-                            <small>Enter a keyword to monitor for news and updates</small>
-                            <div id="keyword-input-error" class="error-message hidden"></div>
+                            <label for="edit-partner-input">Partner Name</label>
+                            <input type="text" id="edit-partner-input" placeholder="e.g., Microsoft, Tesla, Goldman Sachs" required>
+                            <small>Enter a partner name to monitor for news and updates</small>
+                            <div id="edit-partner-input-error" class="error-message hidden"></div>
                         </div>
                         
                         <div class="form-group">
-                            <label for="kind-select">Type</label>
-                            <select id="kind-select" required>
-                                <option value="">Select type...</option>
-                                <option value="regulatory">Regulatory - Laws, compliance, policies</option>
-                                <option value="partner">Partner - Business partnerships, collaborations</option>
-                                <option value="competition">Competition - Market competitors, industry news</option>
-                                <option value="vendor">Vendor - Suppliers, service providers</option>
+                            <label for="edit-frequency-select">Search Frequency</label>
+                            <select id="edit-frequency-select">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
                             </select>
-                            <div id="kind-select-error" class="error-message hidden"></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancel-edit-partner-btn" class="btn btn-secondary">Cancel</button>
+                    <button id="save-edit-partner-btn" class="btn btn-primary">
+                        <span class="btn-text">Update Partner</span>
+                        <div class="btn-spinner hidden"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Partner Modal -->
+        <div id="add-partner-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Add Partner Name</h3>
+                    <button id="close-partner-modal" class="modal-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="partner-form">
+                        <div class="form-group">
+                            <label for="partner-input">Partner Name</label>
+                            <input type="text" id="partner-input" placeholder="e.g., Microsoft, Tesla, Goldman Sachs" required>
+                            <small>Enter a partner name to monitor for news and updates</small>
+                            <div id="partner-input-error" class="error-message hidden"></div>
                         </div>
                         
                         <div class="form-group">
@@ -254,45 +296,26 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button id="cancel-keyword-btn" class="btn btn-secondary">Cancel</button>
-                    <button id="save-keyword-btn" class="btn btn-primary">
-                        <span class="btn-text">Add Keyword</span>
+                    <button id="cancel-partner-btn" class="btn btn-secondary">Cancel</button>
+                    <button id="save-partner-btn" class="btn btn-primary">
+                        <span class="btn-text">Add Partner</span>
                         <div class="btn-spinner hidden"></div>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Keyword Details Modal -->
-        <div id="keyword-details-modal" class="modal hidden">
+        <!-- Partner Details Modal -->
+        <div id="partner-details-modal" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 id="keyword-details-title">Keyword Details</h3>
-                    <button id="close-keyword-details" class="modal-close">×</button>
+                    <h3 id="partner-details-title">Partner Details</h3>
+                    <button id="close-partner-details" class="modal-close">×</button>
                 </div>
                 <div class="modal-body">
-                    <div class="keyword-info">
-                        <div class="info-row">
-                            <span class="label">Keyword:</span>
-                            <span id="detail-keyword"></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="label">Type:</span>
-                            <span id="detail-kind" class="kind-badge"></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="label">Last Search:</span>
-                            <span id="detail-last-search">Never</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="label">Schedule:</span>
-                            <span id="detail-schedule"></span>
-                        </div>
-                    </div>
-                    
                     <div class="meta-summary-section">
                         <h4>Latest Summary</h4>
-                        <div id="keyword-meta-summary" class="meta-summary-content">
+                        <div id="partner-meta-summary" class="meta-summary-content">
                             <p class="no-summary">No summary available yet</p>
                         </div>
                         <div id="sentiment-indicator" class="sentiment-indicator hidden">
@@ -311,11 +334,63 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button id="trigger-search-btn" class="btn btn-secondary">
-                        <span class="btn-text">🔍 Search Now</span>
+                    <!-- Buttons removed as requested -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Support Modal -->
+        <div id="support-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Support</h3>
+                    <button id="close-support-modal" class="modal-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="support-content">
+                        <p>Need help? Contact our support team:</p>
+                        <div class="support-email">
+                            <strong>support@carveragents.ai</strong>
+                        </div>
+                        <p>Click the email to copy it to your clipboard.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="copy-support-email-btn" class="btn btn-primary">
+                        <span class="btn-text">Copy Email</span>
                         <div class="btn-spinner hidden"></div>
                     </button>
-                    <button id="edit-keyword-btn" class="btn btn-primary">Edit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Summary Modal -->
+        <div id="share-summary-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Share Summary</h3>
+                </div>
+                <div class="modal-body">
+                    <div class="share-content">
+                        <div class="share-field">
+                            <label>Title:</label>
+                            <p id="share-title"></p>
+                        </div>
+                        <div class="share-field">
+                            <label>URL:</label>
+                            <p id="share-url"></p>
+                        </div>
+                        <div class="share-field">
+                            <label>Summary:</label>
+                            <p id="share-summary"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="copy-share-btn" class="btn btn-primary">
+                        <span class="btn-text">Copy to Clipboard</span>
+                        <div class="btn-spinner hidden"></div>
+                    </button>
                 </div>
             </div>
         </div>
@@ -385,6 +460,7 @@
     <!-- Toast Notifications -->
     <div id="toast-container"></div>
 
+    <script src="js/version.js"></script>
     <script src="js/sidepanel.js"></script>
 </body>
 </html>
