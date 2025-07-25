@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Regulatory Monitor",
+  "name": "Carver",
   "version": "1.0.0",
-  "description": "Stay updated with regulatory changes and compliance requirements",
+  "description": "Stay updated with regulatory and partner updates",
   "permissions": [
     "storage",
     "alarms",
@@ -18,7 +18,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Open Regulatory Monitor"
+    "default_title": "Open Carver"
   },
   "side_panel": {
     "default_path": "sidepanel.html"

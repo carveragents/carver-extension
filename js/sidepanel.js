@@ -60,6 +60,7 @@ class RegulatoryMonitorSidePanel {
         document.getElementById('api-key-input')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleApiKeyValidation();
         });
+        document.getElementById('toggle-api-key-visibility')?.addEventListener('click', () => this.toggleLoginApiKeyVisibility());
 
         // Tab Navigation
         document.getElementById('regulatory-tab')?.addEventListener('click', () => this.switchTab('regulatory'));
@@ -116,7 +117,6 @@ class RegulatoryMonitorSidePanel {
         
         // Support Modal Event Listeners
         document.getElementById('support-btn')?.addEventListener('click', () => this.showSupportModal());
-        document.getElementById('support-btn-setup')?.addEventListener('click', () => this.showSupportModal());
         document.getElementById('close-support-modal')?.addEventListener('click', () => this.hideSupportModal());
         document.getElementById('copy-support-email-btn')?.addEventListener('click', () => this.copySupportEmail());
         
@@ -346,7 +346,7 @@ class RegulatoryMonitorSidePanel {
                     </div>
                 </div>
                 <div class="topic-summary">
-                    ${this.escapeHtml(topic.meta_summary)}
+                    ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 </div>
             </div>
         `).join('');
@@ -374,11 +374,6 @@ class RegulatoryMonitorSidePanel {
             // Update topic details
             document.getElementById('tag-details-title').textContent = topicDetails.topic_name;
             
-            // Always show description
-            const descriptionElement = document.getElementById('tag-description');
-            if (descriptionElement) {
-                descriptionElement.textContent = topicDetails.description || 'No description available';
-            }
             
             // Show/hide content based on subscription status
             const metaSummarySection = document.querySelector('.meta-summary');
@@ -689,7 +684,7 @@ class RegulatoryMonitorSidePanel {
                         <button class="btn btn-small btn-secondary edit-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" data-keyword-frequency="${keyword.frequency || 'daily'}" title="Edit Partner">
                             ✏️
                         </button>
-                        <button class="btn btn-small btn-danger delete-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" title="Delete Partner">
+                        <button class="btn btn-small btn-secondary delete-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" title="Delete Partner">
                             🗑️
                         </button>
                     </div>
@@ -998,6 +993,15 @@ class RegulatoryMonitorSidePanel {
             maskedKey.textContent = '••••••••••••••••';
             showBtn.textContent = 'Show';
         }
+        
+        // Populate user profile data
+        const userNameElement = document.getElementById('user-profile-name');
+        const userEmailElement = document.getElementById('user-profile-email');
+        
+        if (this.currentUser && userNameElement && userEmailElement) {
+            userNameElement.textContent = this.currentUser.name || 'Unknown User';
+            userEmailElement.textContent = this.currentUser.email || 'No email available';
+        }
     }
 
     changeApiKey() {
@@ -1015,6 +1019,21 @@ class RegulatoryMonitorSidePanel {
             } else {
                 maskedKey.textContent = '••••••••••••••••';
                 showBtn.textContent = 'Show';
+            }
+        }
+    }
+
+    toggleLoginApiKeyVisibility() {
+        const input = document.getElementById('api-key-input');
+        const toggleBtn = document.getElementById('toggle-api-key-visibility');
+        
+        if (input && toggleBtn) {
+            if (input.type === 'password') {
+                input.type = 'text';
+                toggleBtn.textContent = 'Hide';
+            } else {
+                input.type = 'password';
+                toggleBtn.textContent = 'Show';
             }
         }
     }
@@ -1073,6 +1092,14 @@ class RegulatoryMonitorSidePanel {
             "'": '&#039;'
         };
         return text.replace(/[&<>"']/g, (m) => map[m]);
+    }
+
+    cleanSummaryText(text) {
+        if (!text) return '';
+        
+        // Remove leading special characters and whitespace
+        // Keep removing until we find an alphanumeric character
+        return text.replace(/^[^a-zA-Z0-9]+/, '').trim();
     }
 
     truncateText(text, maxLength) {
@@ -1527,10 +1554,6 @@ class RegulatoryMonitorSidePanel {
         this.showScreen('api-key-setup');
     }
 
-    toggleApiKeyVisibility() {
-        // Implementation for showing/hiding API key
-        console.log('Toggle API key visibility');
-    }
 
     async handleTagSearch() {
         const searchInput = document.getElementById('tag-search');
@@ -1622,7 +1645,7 @@ class RegulatoryMonitorSidePanel {
                     </div>
                 </div>
                 <div class="topic-summary">
-                    ${this.escapeHtml(topic.meta_summary)}
+                    ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 </div>
                 <div class="topic-description">
                     ${this.escapeHtml(topic.description || '')}
@@ -2214,6 +2237,7 @@ class RegulatoryMonitorSidePanel {
             }
         }
     }
+
 
     // Edit Partner Modal Functions
     showEditPartnerModal(keywordId, keywordName, frequency) {

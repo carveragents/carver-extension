@@ -78,7 +78,7 @@ class BackgroundService {
             });
         }
 
-        console.log('Regulatory Monitor background service initialized');
+        console.log('Carver Agents background service initialized');
     }
 
     async performBackgroundSync() {
@@ -194,8 +194,8 @@ class BackgroundService {
                 await chrome.notifications.create({
                     type: 'basic',
                     iconUrl: 'icons/icon48.png',
-                    title: 'Regulatory Monitor',
-                    message: 'New regulatory updates available!',
+                    title: 'Carver Agents',
+                    message: 'Updates available!',
                     priority: 1
                 });
             }
@@ -280,7 +280,7 @@ class BackgroundService {
                 await chrome.notifications.create({
                     type: 'basic',
                     iconUrl: 'icons/icon48.png',
-                    title: 'Regulatory Monitor Installed',
+                    title: 'Carver Agent Installed',
                     message: 'Click the extension icon to get started with your API key!',
                     priority: 2
                 });

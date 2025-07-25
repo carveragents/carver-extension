@@ -1,4 +1,4 @@
-// Content script for Regulatory Monitor extension
+// Content script for Carver Agents extension
 // Creates a floating button that opens the side panel
 
 class RegulatoryMonitorFloatingButton {
@@ -9,7 +9,7 @@ class RegulatoryMonitorFloatingButton {
     }
 
     init() {
-        console.log('Regulatory Monitor content script initializing...');
+        console.log('Carver agnet content script initializing...');
         
         // Only inject on main pages (not iframes)
         if (window.self !== window.top) {
@@ -50,15 +50,15 @@ class RegulatoryMonitorFloatingButton {
         this.button = document.createElement('div');
         this.button.id = 'regulatory-monitor-floating-btn';
         this.button.className = 'rm-floating-button';
-        this.button.setAttribute('aria-label', 'Open Regulatory Monitor');
-        this.button.title = 'Regulatory Monitor';
+        this.button.setAttribute('aria-label', 'Open Carver Agent');
+        this.button.title = 'Carver Agent';
         
         // Add the button content with a simpler icon
         this.button.innerHTML = `
             <div class="rm-btn-icon">
                 📋
             </div>
-            <div class="rm-btn-tooltip">Regulatory Monitor</div>
+            <div class="rm-btn-tooltip">Carver Agent</div>
         `;
 
         // Apply inline styles directly (more reliable than CSS classes)
@@ -217,11 +217,11 @@ class RegulatoryMonitorFloatingButton {
 }
 
 // Initialize the floating button when the page loads
-console.log('🔧 Regulatory Monitor content script loaded!', window.location.href);
+console.log('🔧 Carver Agent content script loaded!', window.location.href);
 
 // Global test function
 window.testRegulatoryMonitor = function() {
-    console.log('🧪 Testing Regulatory Monitor...');
+    console.log('🧪 Testing Carver Agent...');
     const button = document.getElementById('regulatory-monitor-floating-btn');
     if (button) {
         console.log('✅ Floating button found!', button);
@@ -234,7 +234,7 @@ window.testRegulatoryMonitor = function() {
 
 // Global force injection function
 window.forceInjectRegulatoryMonitor = function() {
-    console.log('🔧 Force injecting Regulatory Monitor...');
+    console.log('🔧 Force injecting Carver Agent...');
     try {
         if (window.regulatoryMonitorApp) {
             console.log('Destroying existing app...');

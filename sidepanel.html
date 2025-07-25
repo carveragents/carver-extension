@@ -21,44 +21,55 @@
 
         <!-- API Key Setup Screen -->
         <div id="api-key-setup" class="screen hidden">
-            <div class="header">
-                <div class="logo-title">
-                    <img src="icons/icon32.png" alt="Carver" class="logo">
-                    <h1>Carver</h1>
+            <div class="login-container">
+                <div class="login-header">
+                    <img src="icons/icon32.png" alt="Carver" class="login-logo">
+                    <h1 class="login-brand">Carver Watch</h1>
+                    <p class="login-subtitle">Real-time Contextual Intelligence<br />Anytime, Anywhere</p>
                 </div>
-                <div class="header-actions">
-                    <button id="support-btn-setup" class="icon-btn" title="Support">📧</button>
-                </div>
-            </div>
-            <div class="content">
-                <div class="welcome-section">
-                    <p class="welcome-title">AI-powered market intelligence for financial services</p>
-                    <p class="welcome-message">Stay informed with real-time regulatory updates, partner monitoring, and actionable insights. Get started by entering your API key below.</p>
-                </div>
-                <div class="form-group">
-                    <label for="host-select">Environment</label>
-                    <select id="host-select">
+                
+                <div class="login-form">
+                    <h2 class="login-title">Log in</h2>
+                    
+                    <div class="form-group">
+                        <div class="input-with-button">
+                            <input type="password" id="api-key-input" placeholder="Enter your API key">
+                            <button type="button" id="toggle-api-key-visibility" class="input-show-btn">
+                                Show
+                            </button>
+                        </div>
+                        <div id="api-key-error" class="error-message hidden"></div>
+                    </div>
+                    
+                    <p class="api-key-help">
+                        Don't have an API key? Email us at 
+                        <a href="mailto:support@carveragents.ai">support@carveragents.ai</a>
+                    </p>
+                    
+                    <button id="validate-api-key" class="btn btn-primary login-btn">
+                        <span class="btn-text">Continue</span>
+                        <div class="btn-spinner hidden"></div>
+                    </button>
+                    
+                    <!-- Hidden environment selector - keeping for functionality -->
+                    <select id="host-select" style="display: none;">
                         <option value="https://app.carveragents.ai">Production (app.carveragents.ai)</option>
                         <option value="https://app.staging.carveragents.ai">Staging (app.staging.carveragents.ai)</option>
                         <option value="http://localhost:8000">Local Development (localhost:8000)</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="api-key-input">API Key</label>
-                    <input type="password" id="api-key-input" placeholder="Enter your API key">
-                    <div id="api-key-error" class="error-message hidden"></div>
-                </div>
-                <button id="validate-api-key" class="btn btn-primary">
-                    <span class="btn-text">Validate Key</span>
-                    <div class="btn-spinner hidden"></div>
-                </button>
                 
-                <div class="footer-links">
-                    <a href="https://carveragents.ai/terms" target="_blank" rel="noopener noreferrer">Terms & Conditions</a>
-                    <span class="separator">•</span>
-                    <a href="https://carveragents.ai/" target="_blank" rel="noopener noreferrer">Visit Website</a>
-                    <span class="separator">•</span>
-                    <span class="version-info" id="api-version"></span>
+                <div class="login-footer">
+                    <p class="footer-text">
+                        By logging in, you acknowledge that you have read and understood, and agree to 
+                        Carver Agents' <a href="https://carveragents.ai/terms" target="_blank">Terms</a> and <a href="https://carveragents.ai/privacy" target="_blank">Privacy Policy</a>.
+                    </p>
+                    <p class="website-link">
+                        <a href="https://carveragents.ai" target="_blank" rel="noopener noreferrer">Visit our website</a>
+                    </p>
+                    <p class="version-text">
+                        © Carver Beta-<span id="api-version"></span>
+                    </p>
                 </div>
             </div>
         </div>
@@ -66,14 +77,22 @@
         <!-- Main Dashboard Screen -->
         <div id="main-dashboard" class="screen hidden">
             <div class="header">
-                <div class="logo-title">
-                    <img src="icons/icon32.png" alt="Carver" class="logo">
-                    <h1>Carver</h1>
+                <div class="header-brand">
+                    <img src="icons/icon32.png" alt="Carver" class="header-logo">
+                    <div class="brand-info">
+                        <h1 class="brand-title">Carver</h1>
+                    </div>
                 </div>
-                <div class="user-info">
-                    <span id="user-name"></span>
-                    <button id="support-btn" class="icon-btn" title="Support">📧</button>
-                    <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+                <div class="header-right">
+                    <span id="user-name" class="user-name"></span>
+                    <div class="header-actions">
+                        <button id="support-btn" class="action-btn" title="Support">
+                            💬
+                        </button>
+                        <button id="settings-btn" class="action-btn" title="Settings">
+                            ⚙️
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -168,11 +187,6 @@
             </div>
             
             <div class="content">
-                <!-- Tag Description -->
-                <div class="tag-description">
-                    <p id="tag-description"></p>
-                </div>
-                
                 <!-- Tag Meta Summary -->
                 <div class="meta-summary">
                     <h3>Summary</h3>
@@ -352,7 +366,6 @@
                         <div class="support-email">
                             <strong>support@carveragents.ai</strong>
                         </div>
-                        <p>Click the email to copy it to your clipboard.</p>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -403,17 +416,20 @@
             </div>
             
             <div class="content">
+                <!-- User Profile Section -->
+                <div class="user-profile-section">
+                    <div class="user-details">
+                        <h3 id="user-profile-name">Loading...</h3>
+                        <p id="user-profile-email">Loading...</p>
+                    </div>
+                    <p class="settings-terms-text">
+                        By using this Chrome extension, you acknowledge that you have read and understood, and agree to 
+                        Carver Agents' <a href="https://carveragents.ai/terms" target="_blank">Terms</a> and <a href="https://carveragents.ai/privacy" target="_blank">Privacy Policy</a>.
+                    </p>
+                </div>
+
                 <div class="settings-section">
                     <h3>Account</h3>
-                    <div class="setting-item">
-                        <label for="settings-host-select">Environment</label>
-                        <select id="settings-host-select">
-                            <option value="https://app.carveragents.ai">Production (app.carveragents.ai)</option>
-                            <option value="https://app.staging.carveragents.ai">Staging (app.staging.carveragents.ai)</option>
-                            <option value="http://localhost:8000">Local Development (localhost:8000)</option>
-                        </select>
-                        <small>Changes take effect immediately</small>
-                    </div>
                     <div class="setting-item">
                         <label>API Key</label>
                         <div class="api-key-display">
@@ -421,7 +437,7 @@
                             <button id="show-api-key" class="btn btn-small">Show</button>
                         </div>
                     </div>
-                    <button id="change-api-key" class="btn btn-secondary">Change API Key</button>
+                    <button id="change-api-key" class="btn btn-secondary" style="display: none;">Change API Key</button>
                 </div>
 
                 <div class="settings-section">

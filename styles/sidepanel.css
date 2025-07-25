@@ -1,4 +1,4 @@
-/* Side Panel Styles for Regulatory Monitor - Carver Agents Design */
+/* Side Panel Styles for Carver Agent - Carver Agents Design */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
 * {
@@ -188,55 +188,102 @@ html, body {
 
 /* Header */
 .header {
-    background: #1a1a1a;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
     color: white;
-    padding: 20px 24px;
+    padding: 16px 20px;
     border-bottom: 1px solid #e5e7eb;
     flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    min-height: 60px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.logo-title {
+.header-brand {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex: 1;
 }
 
-.logo {
-    width: 24px;
-    height: 24px;
+.header-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    flex-shrink: 0;
 }
 
-.header h1 {
-    font-size: 16px;
+.brand-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+}
+
+.brand-title {
+    font-size: 18px;
     font-weight: 600;
     margin: 0;
     letter-spacing: -0.02em;
+    line-height: 1.2;
+    white-space: nowrap;
 }
 
-.header .user-info {
-    font-size: 12px;
-    opacity: 0.8;
+.brand-subtitle {
+    font-size: 10px;
+    opacity: 0.7;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+.header-right {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    font-weight: 300;
-    gap: 8px;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.user-name {
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0.9;
+    color: #ffffff;
+    white-space: nowrap;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .header-actions {
     display: flex;
-    align-items: center;
     gap: 8px;
 }
 
-.header .subtitle {
-    font-size: 12px;
-    opacity: 0.8;
-    margin-top: 8px;
-    font-weight: 400;
+.action-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: white;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 16px;
+    line-height: 1;
+    min-width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-1px);
 }
 
 .welcome-section {
@@ -258,12 +305,6 @@ html, body {
     line-height: 1.5;
     font-weight: 400;
     margin: 0;
-}
-
-.header .user-info span {
-    font-size: 11px;
-    opacity: 0.8;
-    font-weight: 300;
 }
 
 /* Content */
@@ -985,6 +1026,47 @@ select:focus {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 12px;
     color: #374151;
+}
+
+/* User Profile Section in Settings */
+.user-profile-section {
+    margin-bottom: 32px;
+    padding: 24px;
+    background: #f9fafb;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    text-align: center;
+}
+
+.user-details h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 8px 0;
+}
+
+.user-details p {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 0 20px 0;
+}
+
+.settings-terms-text {
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.5;
+    margin: 0;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.settings-terms-text a {
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.settings-terms-text a:hover {
+    text-decoration: underline;
 }
 
 /* Meta Summary */
@@ -1813,7 +1895,182 @@ select:focus-visible {
     background: white;
 }
 
-/* Footer Links */
+/* Login Screen Redesign */
+.login-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px 40px;
+    background: #ffffff;
+}
+
+.login-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 40px;
+    position: relative;
+    width: 100%;
+}
+
+.login-logo {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+}
+
+.login-brand {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+    text-align: center;
+}
+
+.login-subtitle {
+    font-size: 14px;
+    font-weight: 400;
+    color: #6b7280;
+    margin: 8px 0 0 0;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.login-form {
+    width: 100%;
+    max-width: 600px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.login-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    text-align: center;
+    margin: 0 0 24px 0;
+}
+
+.login-form .form-group {
+    margin-bottom: 16px;
+}
+
+.input-with-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.login-form input {
+    width: 100%;
+    padding: 12px 80px 12px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.input-show-btn {
+    position: absolute;
+    right: 8px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    color: #374151;
+    font-weight: 500;
+}
+
+.input-show-btn:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.login-form input:focus {
+    outline: none;
+    border-color: #bae424;
+    box-shadow: 0 0 0 3px rgba(186, 228, 36, 0.1);
+}
+
+.api-key-help {
+    font-size: 12px;
+    color: #6b7280;
+    text-align: center;
+    margin: 16px 0 24px 0;
+    line-height: 1.4;
+}
+
+.api-key-help a {
+    color: #1a1a1a;
+    text-decoration: none;
+}
+
+.api-key-help a:hover {
+    text-decoration: underline;
+}
+
+.login-btn {
+    width: 100%;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0;
+}
+
+.login-footer {
+    margin-top: 32px;
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+}
+
+.footer-text {
+    font-size: 11px;
+    color: #6b7280;
+    line-height: 1.4;
+    margin: 0 0 16px 0;
+}
+
+.footer-text a {
+    color: #1a1a1a;
+    text-decoration: none;
+}
+
+.footer-text a:hover {
+    text-decoration: underline;
+}
+
+.website-link {
+    font-size: 12px;
+    margin: 12px 0;
+}
+
+.website-link a {
+    color: #1a1a1a;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.website-link a:hover {
+    text-decoration: underline;
+    color: #bae424;
+}
+
+.version-text {
+    font-size: 10px;
+    color: #9ca3af;
+    margin: 0;
+}
+
+/* Footer Links - Keep for other screens */
 .footer-links {
     margin-top: 24px;
     padding-top: 16px;
