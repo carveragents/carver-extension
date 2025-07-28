@@ -4,7 +4,7 @@ class RegulatoryMonitorSidePanel {
         this.apiKey = null;
         this.currentUser = null;
         this.currentScreen = 'loading';
-        this.apiHost = 'https://app.carveragents.ai'; // Default to production
+        this.apiHost = 'http://localhost:8000'; // Default to local development
         this.apiBaseUrl = `${this.apiHost}/api/v1`;
         this.cache = new Map();
         this.retryCount = 0;
@@ -25,16 +25,17 @@ class RegulatoryMonitorSidePanel {
             const result = await chrome.storage.local.get(['apiKey', 'userInfo', 'apiHost']);
             console.log('Storage result:', result);
             
-            // Set host and update base URL
-            if (result.apiHost) {
-                this.apiHost = result.apiHost;
-                this.apiBaseUrl = `${this.apiHost}/api/v1`;
-                
-                // Set the host dropdown to the saved value
-                const hostSelect = document.getElementById('host-select');
-                if (hostSelect) {
-                    hostSelect.value = result.apiHost;
-                }
+            // Force localhost for development - override any stored host
+            this.apiHost = 'http://localhost:8000';
+            this.apiBaseUrl = `${this.apiHost}/api/v1`;
+            
+            // Update storage to reflect localhost
+            await chrome.storage.local.set({ apiHost: this.apiHost });
+            
+            // Set the host dropdown to localhost
+            const hostSelect = document.getElementById('host-select');
+            if (hostSelect) {
+                hostSelect.value = this.apiHost;
             }
             
             if (result.apiKey) {
@@ -71,6 +72,11 @@ class RegulatoryMonitorSidePanel {
         document.getElementById('search-back-btn')?.addEventListener('click', () => this.showScreen('main-dashboard'));
         document.getElementById('subscriptions-back-btn')?.addEventListener('click', () => this.returnToMainFromSubscriptions());
         document.getElementById('settings-back-btn')?.addEventListener('click', () => this.showScreen('main-dashboard'));
+        document.getElementById('partner-back-btn')?.addEventListener('click', () => this.showScreen('main-dashboard'));
+        
+        // Partner Details Screen Actions
+        document.getElementById('edit-partner-btn')?.addEventListener('click', () => this.handleEditPartnerFromScreen());
+        document.getElementById('delete-partner-btn')?.addEventListener('click', () => this.handleDeletePartnerFromScreen());
 
         // Partner Watch Event Listeners
         document.getElementById('add-partner-btn')?.addEventListener('click', () => this.showAddPartnerModal());
@@ -78,7 +84,6 @@ class RegulatoryMonitorSidePanel {
         document.getElementById('close-partner-modal')?.addEventListener('click', () => this.hideAddPartnerModal());
         document.getElementById('cancel-partner-btn')?.addEventListener('click', () => this.hideAddPartnerModal());
         document.getElementById('save-partner-btn')?.addEventListener('click', () => this.handleSavePartner());
-        document.getElementById('close-partner-details')?.addEventListener('click', () => this.hidePartnerDetailsModal());
         document.getElementById('horizon-refresh-btn')?.addEventListener('click', () => this.refreshPartnerData());
         
         // Edit Partner Modal Event Listeners
@@ -88,6 +93,27 @@ class RegulatoryMonitorSidePanel {
         
         // Share Summary Modal Event Listeners
         document.getElementById('copy-share-btn')?.addEventListener('click', () => this.copyShareSummary());
+        document.getElementById('close-share-modal')?.addEventListener('click', () => this.hideShareSummaryModal());
+        
+        // Topic Summary Share Button Event Listeners
+        document.getElementById('share-topic-summary')?.addEventListener('click', () => this.showTopicSummaryModal());
+        document.getElementById('close-overall-topic-summary-modal')?.addEventListener('click', () => this.hideTopicSummaryModal());
+        document.getElementById('copy-overall-topic-summary-btn')?.addEventListener('click', () => this.copyTopicSummary());
+        
+        // Partner Summary Share Button Event Listeners
+        document.getElementById('share-partner-summary')?.addEventListener('click', () => this.showPartnerSummaryModal());
+        document.getElementById('close-overall-partner-summary-modal')?.addEventListener('click', () => this.hidePartnerSummaryModal());
+        document.getElementById('copy-overall-partner-summary-btn')?.addEventListener('click', () => this.copyPartnerSummary());
+        
+        // Unsubscribe Confirmation Modal Event Listeners
+        document.getElementById('close-unsubscribe-confirm-modal')?.addEventListener('click', () => this.hideUnsubscribeConfirmModal());
+        document.getElementById('cancel-unsubscribe-btn')?.addEventListener('click', () => this.hideUnsubscribeConfirmModal());
+        document.getElementById('confirm-unsubscribe-btn')?.addEventListener('click', () => this.confirmUnsubscribe());
+        
+        // Delete Partner Confirmation Modal Event Listeners
+        document.getElementById('close-delete-partner-confirm-modal')?.addEventListener('click', () => this.hideDeletePartnerConfirmModal());
+        document.getElementById('cancel-delete-partner-btn')?.addEventListener('click', () => this.hideDeletePartnerConfirmModal());
+        document.getElementById('confirm-delete-partner-btn')?.addEventListener('click', () => this.confirmDeletePartnerFromModal());
         
         // Partner Search Event Listeners
         document.getElementById('partner-search-input')?.addEventListener('input', (e) => this.handlePartnerSearch(e.target.value));
@@ -96,7 +122,7 @@ class RegulatoryMonitorSidePanel {
 
         // Topics Search Event Listeners
         document.getElementById('topics-search-input')?.addEventListener('input', (e) => this.handleTopicsSearch(e.target.value));
-        document.getElementById('topics-search-input')?.addEventListener('focus', () => this.showTopicsSuggestions());
+        document.getElementById('topics-search-input')?.addEventListener('focus', () => this.handleTopicsSearchFocus());
         document.getElementById('topics-search-input')?.addEventListener('blur', () => setTimeout(() => this.hideTopicsSuggestions(), 200));
         document.getElementById('search-topics-btn')?.addEventListener('click', () => this.focusTopicsSearch());
         
@@ -333,30 +359,57 @@ class RegulatoryMonitorSidePanel {
             return a.tag_name.localeCompare(b.tag_name);
         });
         
-        container.innerHTML = sortedSummaries.map(topic => `
+        container.innerHTML = sortedSummaries.map(topic => {
+            const isSubscribed = topic.color === '#10b981';
+            return `
             <div class="topic-card" data-topic-id="${topic.tag_id}">
                 <div class="topic-header">
                     <div class="topic-name">
                         <div class="topic-color" style="background-color: ${topic.color}"></div>
-                        ${this.escapeHtml(topic.tag_name)}
+                        <span class="topic-title" title="${this.escapeHtml(topic.tag_name)}">${this.escapeHtml(this.truncateText(topic.tag_name, 3))}</span>
                     </div>
                     <div class="topic-meta">
-                        <span>Monitoring ${topic.link_count} ${topic.link_count === 1 ? 'feed' : 'feeds'}</span>
-                        ${topic.last_updated ? `<span>Updated ${this.formatDate(topic.last_updated)}</span>` : '<span>No recent updates</span>'}
+                        <span>${topic.link_count} ${topic.link_count === 1 ? 'update' : 'updates'} 
+                        ${topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}</span>` : '<span>No recent updates</span>'}
                     </div>
+                    ${isSubscribed ? `
+                    <div class="topic-actions">
+                        <button class="unsubscribe-tile-btn" 
+                                data-topic-id="${topic.tag_id}" 
+                                data-topic-name="${this.escapeHtml(topic.tag_name)}"
+                                title="Unsubscribe from topic">
+                            ×
+                        </button>
+                    </div>
+                    ` : ''}
                 </div>
                 <div class="topic-summary">
                     ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
         
         // Add click listeners for topic cards
         const topicCards = container.querySelectorAll('.topic-card');
         topicCards.forEach(card => {
             card.addEventListener('click', (e) => {
+                // Don't navigate to details if clicking on action buttons
+                if (e.target.classList.contains('unsubscribe-tile-btn')) {
+                    return;
+                }
                 const topicId = e.currentTarget.getAttribute('data-topic-id');
                 this.showTopicDetails(topicId);
+            });
+        });
+        
+        // Add listeners for unsubscribe buttons in tiles
+        container.querySelectorAll('.unsubscribe-tile-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const topicId = e.target.getAttribute('data-topic-id');
+                const topicName = e.target.getAttribute('data-topic-name');
+                this.showUnsubscribeConfirmModal(topicId, topicName, 'tile');
             });
         });
     }
@@ -432,33 +485,42 @@ class RegulatoryMonitorSidePanel {
     renderFeedEntries(feedEntries) {
         const container = document.getElementById('link-list');
         
-        // if (!feedEntries || feedEntries.length === 0) {
-        //     container.innerHTML = '<div class="empty-state"><p>No recent updates available.</p></div>';
-        //     return;
-        // }
+        if (!feedEntries || feedEntries.length === 0) {
+            container.innerHTML = '<p class="no-summary">No recent updates available yet.</p>';
+            return;
+        }
 
-        container.innerHTML = feedEntries.map(entry => `
+        // Sort entries by published date (latest first)
+        const sortedEntries = [...feedEntries].sort((a, b) => {
+            const dateA = new Date(a.published_date);
+            const dateB = new Date(b.published_date);
+            return dateB - dateA;
+        });
+
+        container.innerHTML = sortedEntries.map(entry => `
             <div class="link-item" data-entry-id="${entry.entry_id}">
-                <div class="link-title">
-                    <a href="${entry.link}" target="_blank" rel="noopener noreferrer" class="link-title-text">
-                        ${this.escapeHtml(this.truncateText(entry.title, 80))}
-                    </a>
+                <div class="link-header">
+                    <div class="link-title">
+                        <a href="${entry.link}" target="_blank" rel="noopener noreferrer" class="link-title-text" title="${this.escapeHtml(entry.title)}">
+                            ${this.escapeHtml(this.truncateText(entry.title, 5))}
+                        </a>
+                    </div>
+                    <div class="link-meta">
+                        <span>${this.formatActualDate(entry.published_date)}</span>
+                    </div>
+                    <div class="link-actions">
+                        <button class="link-action-icon" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" title="Share Summary">
+                            📤
+                        </button>
+                        <button class="link-action-icon disabled" disabled title="Extract Names (Coming Soon)">
+                            👥
+                        </button>
+                        <button class="link-action-icon disabled" disabled title="Extract Timelines (Coming Soon)">
+                            📅
+                        </button>
+                    </div>
                 </div>
                 <div class="link-summary-text">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
-                <div class="link-actions">
-                    <button class="link-action" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}">
-                        ${this.getActionLabel('share_summary')}
-                    </button>
-                    <button class="link-action disabled" disabled title="Coming Soon">
-                        ${this.getActionLabel('extract_names')} <span class="coming-soon">Coming Soon</span>
-                    </button>
-                    <button class="link-action disabled" disabled title="Coming Soon">
-                        ${this.getActionLabel('extract_timelines')} <span class="coming-soon">Coming Soon</span>
-                    </button>
-                </div>
-                <div class="link-meta">
-                    Published: ${this.formatDateTime(entry.published_date)}
-                </div>
             </div>
         `).join('');
         
@@ -467,7 +529,7 @@ class RegulatoryMonitorSidePanel {
     }
     
     addActionButtonListeners(container) {
-        const actionButtons = container.querySelectorAll('.link-action[data-action]');
+        const actionButtons = container.querySelectorAll('.link-action[data-action], .link-action-icon[data-action]');
         actionButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 const action = e.target.getAttribute('data-action');
@@ -501,7 +563,11 @@ class RegulatoryMonitorSidePanel {
             if (action === 'share_summary') {
                 // Get the data from button attributes
                 const title = actionButton.getAttribute('data-entry-title') || 'No title';
-                const summary = actionButton.getAttribute('data-entry-summary') || 'No summary available';
+                const fivePointSummary = actionButton.getAttribute('data-entry-five-point');
+                const basicSummary = actionButton.getAttribute('data-entry-summary') || 'No summary available';
+                
+                // Use five-point summary if available, otherwise fall back to basic summary
+                const summary = fivePointSummary && fivePointSummary.trim() ? fivePointSummary : basicSummary;
                 
                 this.showShareSummaryModal(title, url, summary);
                 
@@ -668,38 +734,54 @@ class RegulatoryMonitorSidePanel {
         }
         
         container.innerHTML = `
-            ${keywords.map((keyword, index) => `
-                <div class="keyword-item" data-keyword-id="${keyword.keyword_id}" data-kind="${keyword.kind}">
-                    <div class="keyword-info">
-                        <div class="keyword-name">
-                            <span class="keyword-tag" style="background-color: ${this.getKindColor(keyword.kind, index)}; color: ${this.getKindTextColor(keyword.kind)};">
-                                ${this.escapeHtml(keyword.keyword)}
-                            </span>
+            ${keywords.map((keyword, index) => {
+                // Calculate aggregated sentiment from feed entries
+                const aggregatedSentiment = this.calculateSentiment(keyword.feed_entries);
+                const sentimentDot = this.renderSentimentDot(aggregatedSentiment);
+                
+                // Get one-line summary
+                const summary = keyword.meta_summary || 'No summary available';
+                const truncatedSummary = this.truncateText(this.cleanSummaryText(summary), 150);
+                
+                return `
+                    <div class="topic-card partner-card" data-keyword-id="${keyword.keyword_id}" data-kind="${keyword.kind}">
+                        <div class="topic-header">
+                            <div class="topic-name">
+                                <span class="topic-title" title="${this.escapeHtml(keyword.keyword)}">${this.escapeHtml(this.truncateText(keyword.keyword, 5))}</span>
+                            </div>
+                            <div class="topic-meta">
+                                <span>${keyword.sources_count || 0} sources</span>
+                                ${keyword.last_updated ? `, ${this.formatActualDate(keyword.last_updated)}` : ', No recent updates'}
+                            </div>
+                            <div class="partner-actions">
+                                <button class="btn btn-small btn-secondary edit-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" data-keyword-frequency="${keyword.frequency || 'daily'}" title="Edit Partner">
+                                    ✎
+                                </button>
+                                <button class="btn btn-small btn-secondary delete-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" title="Delete Partner">
+                                    ✕
+                                </button>
+                            </div>
                         </div>
-                        <div class="keyword-meta">
-                            ${keyword.kind} • Sentiment: ${keyword.sentiment || 'neutral'} • ${keyword.result_count || 0} results from ${keyword.sources_count || 0} sources • Last updated: ${keyword.last_updated ? this.formatDate(keyword.last_updated) : 'Never'}
+                        <div class="partner-sentiment">
+                            <span>Sentiment: ${this.capitalize(aggregatedSentiment)}</span>
+                        </div>
+                        <div class="topic-summary">
+                            ${this.escapeHtml(truncatedSummary)}
                         </div>
                     </div>
-                    <div class="keyword-actions">
-                        <button class="btn btn-small btn-secondary edit-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" data-keyword-frequency="${keyword.frequency || 'daily'}" title="Edit Partner">
-                            ✏️
-                        </button>
-                        <button class="btn btn-small btn-secondary delete-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" title="Delete Partner">
-                            🗑️
-                        </button>
-                    </div>
-                </div>
-            `).join('')}
+                `;
+            }).join('')}
         `;
         
-        // Add event listeners
-        container.querySelectorAll('.keyword-item').forEach(item => {
-            item.addEventListener('click', (e) => {
+        // Add event listeners for partner cards
+        container.querySelectorAll('.partner-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                // Don't trigger card click if clicking on action buttons
                 if (!e.target.classList.contains('edit-partner') && 
-                    !e.target.classList.contains('delete-partner') && 
-                    !e.target.classList.contains('trigger-search')) {
+                    !e.target.classList.contains('delete-partner') &&
+                    !e.target.closest('.partner-actions')) {
                     const keywordId = e.currentTarget.getAttribute('data-keyword-id');
-                    this.showKeywordDetails(keywordId);
+                    this.showPartnerDetails(keywordId);
                 }
             });
         });
@@ -913,12 +995,26 @@ class RegulatoryMonitorSidePanel {
         }
     }
 
-    refreshData() {
+    async refreshData() {
         // Clear cache and reload data
         this.cache.clear();
+        
+        // Refresh topics list for search suggestions
+        this.allTopics = null;
+        await this.loadAllTopics();
+        
         if (this.currentScreen === 'main-dashboard') {
             this.loadRegulatoryData();
         }
+        
+        // If search suggestions are currently showing, refresh them
+        const suggestionsContainer = document.getElementById('topics-suggestions');
+        if (suggestionsContainer && !suggestionsContainer.classList.contains('hidden')) {
+            const searchInput = document.getElementById('topics-search-input');
+            const currentValue = searchInput ? searchInput.value.trim() : '';
+            await this.handleTopicsSearch(currentValue);
+        }
+        
         this.showToast('Data refreshed', 'success');
     }
 
@@ -1102,9 +1198,71 @@ class RegulatoryMonitorSidePanel {
         return text.replace(/^[^a-zA-Z0-9]+/, '').trim();
     }
 
+    calculateSentiment(feedEntries) {
+        if (!feedEntries || feedEntries.length === 0) {
+            return 'neutral';
+        }
+
+        const sentimentCounts = {
+            positive: 0,
+            negative: 0,
+            neutral: 0
+        };
+
+        console.log('--- SENTIMENT ANALYSIS DEBUG ---');
+        console.log('Feed entries count:', feedEntries.length);
+
+        feedEntries.forEach((entry, index) => {
+            const rawSentiment = entry.sentiment;
+            const sentiment = entry.sentiment ? entry.sentiment.toLowerCase() : 'neutral';
+            
+            console.log(`Entry ${index + 1}:`, {
+                title: entry.title?.substring(0, 50) + ' ...',
+                rawSentiment: rawSentiment,
+                processedSentiment: sentiment,
+                sentimentScore: entry.sentiment_score
+            });
+            
+            if (sentimentCounts.hasOwnProperty(sentiment)) {
+                sentimentCounts[sentiment]++;
+            } else {
+                console.log(`Unknown sentiment "${sentiment}", defaulting to neutral`);
+                sentimentCounts.neutral++;
+            }
+        });
+
+        console.log('Sentiment counts:', sentimentCounts);
+
+        // Find the sentiment with the highest count
+        const maxCount = Math.max(...Object.values(sentimentCounts));
+        const dominantSentiment = Object.keys(sentimentCounts).find(
+            sentiment => sentimentCounts[sentiment] === maxCount
+        );
+
+        console.log('Dominant sentiment:', dominantSentiment);
+        console.log('--- END SENTIMENT DEBUG ---');
+
+        return dominantSentiment;
+    }
+
+    renderSentimentDot(sentiment) {
+        const sentimentColors = {
+            positive: '🟢',
+            negative: '🔴',
+            neutral: '🟡'
+        };
+        
+        return sentimentColors[sentiment] || sentimentColors.neutral;
+    }
+
     truncateText(text, maxLength) {
         if (!text || text.length <= maxLength) return text;
-        return text.substring(0, maxLength).trim() + '...';
+        return text.substring(0, maxLength).trim() + ' ...';
+    }
+
+    capitalize(text) {
+        if (!text) return '';
+        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
     }
 
     formatMetaSummary(summaryText) {
@@ -1190,6 +1348,29 @@ class RegulatoryMonitorSidePanel {
         }
     }
 
+    formatActualDate(dateString) {
+        try {
+            const date = new Date(dateString);
+            const day = date.getDate();
+            const suffix = this.getOrdinalSuffix(day);
+            const month = date.toLocaleDateString('en-US', { month: 'short' });
+            const year = date.getFullYear();
+            return `${month} ${day}${suffix}, ${year}`;
+        } catch (error) {
+            return 'Unknown date';
+        }
+    }
+
+    getOrdinalSuffix(day) {
+        if (day > 3 && day < 21) return 'th';
+        switch (day % 10) {
+            case 1: return 'st';
+            case 2: return 'nd';
+            case 3: return 'rd';
+            default: return 'th';
+        }
+    }
+
     formatDateTime(dateString) {
         try {
             const date = new Date(dateString);
@@ -1200,110 +1381,6 @@ class RegulatoryMonitorSidePanel {
     }
 
     // Horizon Watch Methods
-    async showKeywordDetails(keywordId) {
-        try {
-            const modal = document.getElementById('partner-details-modal');
-            modal.classList.remove('hidden');
-            
-            // Load keyword details from extension API
-            const keywordDetails = await this.apiCall(`/extension/horizon/keywords/${keywordId}/details`);
-            
-            console.log('Keyword details received:', keywordDetails);
-            
-            // Validate response
-            if (!keywordDetails || !keywordDetails.topic_name) {
-                throw new Error('Invalid keyword details response');
-            }
-            
-            // Extract keyword info from details response
-            let keywordName = keywordDetails.topic_name;
-            let keywordKind = 'unknown';
-            
-            if (keywordDetails.topic_name.includes('(')) {
-                const parts = keywordDetails.topic_name.split('(');
-                keywordName = parts[0].trim();
-                if (parts[1]) {
-                    keywordKind = parts[1].replace(')', '').trim();
-                }
-            }
-            
-            const keyword = {
-                keyword: keywordName,
-                kind: keywordKind,
-                last_search_date: keywordDetails.last_updated,
-                cron_schedule: '0 8 * * *' // Default schedule
-            };
-            
-            // Use the meta summary from the details response
-            const hasRealSummary = keywordDetails.meta_summary && 
-                                 !keywordDetails.meta_summary.includes('No meta summary available');
-            
-            const metaSummary = hasRealSummary ? {
-                point_summary: keywordDetails.meta_summary,
-                sentiment_estimate: null,
-                sentiment_details: null
-            } : null;
-            
-            // No recent summaries since we removed individual summaries
-            const recentSummaries = [];
-            
-            // Populate modal
-            document.getElementById('partner-details-title').textContent = `${keyword.keyword} Details`;
-            
-            // Only set these if the elements exist (they may have been removed from the UI)
-            const detailPartner = document.getElementById('detail-partner');
-            if (detailPartner) {
-                detailPartner.textContent = keyword.keyword;
-            }
-            
-            const detailLastSearch = document.getElementById('detail-last-search');
-            if (detailLastSearch) {
-                detailLastSearch.textContent = keyword.last_search_date ? this.formatDate(keyword.last_search_date) : 'Never';
-            }
-            
-            // Meta summary
-            const metaSummaryContainer = document.getElementById('partner-meta-summary');
-            const sentimentIndicator = document.getElementById('sentiment-indicator');
-            
-            if (metaSummary) {
-                metaSummaryContainer.innerHTML = this.formatMetaSummary(metaSummary.point_summary);
-                
-                if (metaSummary.sentiment_estimate) {
-                    sentimentIndicator.classList.remove('hidden');
-                    const sentimentLabel = document.getElementById('sentiment-label');
-                    const sentimentFill = document.getElementById('sentiment-fill');
-                    
-                    sentimentLabel.textContent = metaSummary.sentiment_estimate;
-                    sentimentLabel.className = `sentiment-label ${metaSummary.sentiment_estimate.toLowerCase()}`;
-                    sentimentFill.className = `sentiment-fill ${metaSummary.sentiment_estimate.toLowerCase()}`;
-                    
-                    if (metaSummary.sentiment_details && metaSummary.sentiment_details.confidence) {
-                        sentimentFill.style.width = `${metaSummary.sentiment_details.confidence * 100}%`;
-                    }
-                } else {
-                    sentimentIndicator.classList.add('hidden');
-                }
-            } else {
-                metaSummaryContainer.innerHTML = '<p class="no-summary">No summary available yet</p>';
-                sentimentIndicator.classList.add('hidden');
-            }
-            
-            // Render individual feed entries if available
-            const recentSummariesList = document.getElementById('recent-summaries-list');
-            if (keywordDetails.feed_entries && keywordDetails.feed_entries.length > 0) {
-                this.renderKeywordFeedEntries(keywordDetails.feed_entries, recentSummariesList);
-            } else {
-                recentSummariesList.innerHTML = '<p class="no-summary">No individual summaries available yet.</p>';
-            }
-            
-            // Store keyword ID for trigger search
-            modal.setAttribute('data-keyword-id', keywordId);
-            
-        } catch (error) {
-            console.error('Failed to load keyword details:', error);
-            this.showToast('Failed to load keyword details', 'error');
-        }
-    }
 
     renderKeywordFeedEntries(feedEntries, container) {
         if (!feedEntries || feedEntries.length === 0) {
@@ -1318,9 +1395,12 @@ class RegulatoryMonitorSidePanel {
                         ${this.escapeHtml(this.truncateText(entry.title, 80))}
                     </a>
                 </div>
+                <div class="entry-sentiment">
+                    <span>Sentiment: ${this.capitalize(entry.sentiment || 'neutral')}</span>
+                </div>
                 <div class="link-summary-text">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
                 <div class="link-actions">
-                    <button class="link-action" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}">
+                    <button class="link-action" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}">
                         ${this.getActionLabel('share_summary')}
                     </button>
                     <button class="link-action disabled" disabled title="Coming Soon">
@@ -1632,32 +1712,49 @@ class RegulatoryMonitorSidePanel {
             </div>
         `;
         
-        container.innerHTML = headerHTML + results.map(topic => `
-            <div class="topic-card ${topic.color === '#10b981' ? 'subscribed' : ''}" data-topic-id="${topic.tag_id}">
-                <div class="topic-header">
-                    <div class="topic-name">
-                        <div class="topic-color" style="background-color: ${topic.color}"></div>
+        container.innerHTML = headerHTML + results.map(topic => {
+            const isSubscribed = topic.color === '#10b981';
+            console.log('Rendering search result:', topic.tag_name, 'isSubscribed:', isSubscribed);
+            return `
+            <div class="search-result-item" data-topic-id="${topic.tag_id}">
+                <div class="search-result-header">
+                    <div class="search-result-title">
+                        <div class="topic-color" style="background-color: ${topic.color}; width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 8px;"></div>
                         ${this.escapeHtml(topic.tag_name)}
                     </div>
-                    <div class="topic-meta">
-                        <span>Monitoring ${topic.link_count} ${topic.link_count === 1 ? 'feed' : 'feeds'}</span>
-                        ${topic.last_updated ? `<span>Updated ${this.formatDate(topic.last_updated)}</span>` : '<span>No recent updates</span>'}
-                    </div>
+                    <button class="search-subscribe-btn" 
+                            data-topic-id="${topic.tag_id}" 
+                            data-topic-name="${this.escapeHtml(topic.tag_name)}"
+                            style="background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; color: ${isSubscribed ? '#10b981' : '#6b7280'};"
+                            title="${isSubscribed ? 'Unsubscribe from topic' : 'Subscribe to topic'}">
+                        ${isSubscribed ? '★' : '☆'}
+                    </button>
                 </div>
-                <div class="topic-summary">
-                    ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
-                </div>
-                <div class="topic-description">
-                    ${this.escapeHtml(topic.description || '')}
+                <div class="search-result-description">
+                    ${this.escapeHtml(topic.description || topic.meta_summary || 'No description available')}
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
         
-        // Add click listeners
-        container.querySelectorAll('.topic-card').forEach(card => {
-            card.addEventListener('click', (e) => {
-                const topicId = e.currentTarget.getAttribute('data-topic-id');
-                this.showTopicDetails(topicId);
+        // Add listeners for subscribe buttons in search results
+        const subscribeButtons = container.querySelectorAll('.search-subscribe-btn');
+        console.log('Found subscribe buttons in search results:', subscribeButtons.length);
+        subscribeButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                console.log('Subscribe button clicked!');
+                const topicId = e.target.getAttribute('data-topic-id');
+                const topicName = e.target.getAttribute('data-topic-name');
+                const isSubscribed = e.target.textContent.trim() === '★';
+                
+                console.log('Topic:', topicName, 'isSubscribed:', isSubscribed);
+                
+                if (isSubscribed) {
+                    this.showUnsubscribeConfirmModal(topicId, topicName, 'search');
+                } else {
+                    this.subscribeToTopicFromSearch(topicId, topicName);
+                }
             });
         });
     }
@@ -1802,18 +1899,18 @@ class RegulatoryMonitorSidePanel {
         
         console.log('Filtering by kind:', selectedKind);
         
-        // Filter keyword items only (meta summaries removed)
-        const keywordItems = document.querySelectorAll('.keyword-item');
-        console.log('Found keyword items:', keywordItems.length);
+        // Filter partner cards only
+        const partnerCards = document.querySelectorAll('.partner-card');
+        console.log('Found partner cards:', partnerCards.length);
         
-        keywordItems.forEach(item => {
-            const itemKind = item.getAttribute('data-kind');
+        partnerCards.forEach(card => {
+            const itemKind = card.getAttribute('data-kind');
             console.log('Item kind:', itemKind, 'Selected:', selectedKind);
             
             if (!selectedKind || itemKind === selectedKind) {
-                item.style.display = 'flex'; // keyword-item uses flex display
+                card.style.display = 'block'; // partner-card uses block display
             } else {
-                item.style.display = 'none';
+                card.style.display = 'none';
             }
         });
         
@@ -1823,12 +1920,12 @@ class RegulatoryMonitorSidePanel {
     
     updateFilteredStats(selectedKind) {
         const totalKeywordsElement = document.getElementById('total-keywords');
-        const allKeywords = document.querySelectorAll('.keyword-item');
-        const filteredKeywords = selectedKind 
-            ? document.querySelectorAll(`.keyword-item[data-kind="${selectedKind}"]`)
-            : allKeywords;
+        const allPartners = document.querySelectorAll('.partner-card');
+        const filteredPartners = selectedKind 
+            ? document.querySelectorAll(`.partner-card[data-kind="${selectedKind}"]`)
+            : allPartners;
         
-        totalKeywordsElement.textContent = filteredKeywords.length;
+        totalKeywordsElement.textContent = filteredPartners.length;
     }
 
     // Partner Search Methods
@@ -1938,23 +2035,23 @@ class RegulatoryMonitorSidePanel {
 
     // Topics Search Methods
     async handleTopicsSearch(query) {
-        if (!query.trim()) {
-            this.hideTopicsSuggestions();
-            return;
-        }
-
         try {
             // Get all topics for filtering
             if (!this.allTopics) {
                 await this.loadAllTopics();
             }
 
+            if (!query.trim()) {
+                // Show all topics when no query (pre-loaded list)
+                await this.showTopicsSuggestions(this.allTopics.slice(0, 15)); // Show top 15 topics
+                return;
+            }
+
             const filteredTopics = this.allTopics.filter(topic => 
                 topic.tag_name.toLowerCase().includes(query.toLowerCase()) ||
                 (topic.description && topic.description.toLowerCase().includes(query.toLowerCase()))
             );
-
-            this.showTopicsSuggestions(filteredTopics.slice(0, 10)); // Show top 10 matches
+            await this.showTopicsSuggestions(filteredTopics.slice(0, 10)); // Show top 10 matches
         } catch (error) {
             console.error('Topics search failed:', error);
         }
@@ -1971,7 +2068,7 @@ class RegulatoryMonitorSidePanel {
         }
     }
 
-    showTopicsSuggestions(topics = []) {
+    async showTopicsSuggestions(topics = []) {
         const suggestionsContainer = document.getElementById('topics-suggestions');
         if (!suggestionsContainer) return;
 
@@ -1980,19 +2077,71 @@ class RegulatoryMonitorSidePanel {
             return;
         }
 
-        suggestionsContainer.innerHTML = topics.map(topic => `
-            <div class="topic-suggestion" data-topic-id="${topic.tag_id}">
-                <div class="topic-suggestion-name">${this.escapeHtml(topic.tag_name)}</div>
-                <div class="topic-suggestion-description">${this.escapeHtml(topic.description || '')}</div>
-            </div>
-        `).join('');
+        // Get current subscriptions to show correct subscribe button state
+        let subscribedTopicIds = [];
+        try {
+            const subscriptions = await this.apiCall('/extension/subscriptions');
+            const subscriptionsArray = Array.isArray(subscriptions) ? subscriptions : [];
+            subscribedTopicIds = subscriptionsArray.map(sub => sub.topic_id || sub.subscription_value);
+        } catch (error) {
+            console.error('Failed to get user subscriptions for suggestions:', error);
+        }
 
-        // Add click handlers
+        suggestionsContainer.innerHTML = topics.map(topic => {
+            const isSubscribed = subscribedTopicIds.includes(topic.tag_id);
+            return `
+                <div class="topic-suggestion" data-topic-id="${topic.tag_id}">
+                    <div class="topic-suggestion-content">
+                        <div class="topic-suggestion-name">${this.escapeHtml(topic.tag_name)}</div>
+                        <div class="topic-suggestion-description">${this.escapeHtml(topic.description || '')}</div>
+                    </div>
+                    <button class="topic-suggestion-subscribe-btn" 
+                            data-topic-id="${topic.tag_id}" 
+                            data-topic-name="${this.escapeHtml(topic.tag_name)}"
+                            title="${isSubscribed ? 'Unsubscribe from topic' : 'Subscribe to topic'}">
+                        ${isSubscribed ? '★' : '☆'}
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers for topic selection
         suggestionsContainer.querySelectorAll('.topic-suggestion').forEach(item => {
             item.addEventListener('click', (e) => {
+                // Don't navigate to details if clicking on subscribe button
+                if (e.target.classList.contains('topic-suggestion-subscribe-btn')) {
+                    return;
+                }
+                
+                // Check if user is subscribed to this topic
                 const topicId = e.currentTarget.getAttribute('data-topic-id');
+                const subscribeBtn = e.currentTarget.querySelector('.topic-suggestion-subscribe-btn');
+                const isSubscribed = subscribeBtn && subscribeBtn.textContent.trim() === '★';
+                
+                if (!isSubscribed) {
+                    // Show a message that they need to subscribe first
+                    this.showToast('Please subscribe to this topic to view details', 'info');
+                    return;
+                }
+                
                 const topicName = e.currentTarget.querySelector('.topic-suggestion-name').textContent;
                 this.selectTopic(topicId, topicName);
+            });
+        });
+
+        // Add click handlers for subscribe buttons
+        suggestionsContainer.querySelectorAll('.topic-suggestion-subscribe-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const topicId = e.target.getAttribute('data-topic-id');
+                const topicName = e.target.getAttribute('data-topic-name');
+                const isCurrentlySubscribed = e.target.textContent.trim() === '★';
+                
+                if (isCurrentlySubscribed) {
+                    this.showUnsubscribeConfirmModal(topicId, topicName, 'suggestions');
+                } else {
+                    await this.subscribeToTopicFromSuggestions(topicId, topicName);
+                }
             });
         });
 
@@ -2017,6 +2166,210 @@ class RegulatoryMonitorSidePanel {
         const searchInput = document.getElementById('topics-search-input');
         if (searchInput) {
             searchInput.focus();
+        }
+    }
+
+    async handleTopicsSearchFocus() {
+        // Show pre-loaded topics list when input is focused
+        const searchInput = document.getElementById('topics-search-input');
+        const currentValue = searchInput ? searchInput.value.trim() : '';
+        
+        // Trigger search to show either filtered results or all topics
+        await this.handleTopicsSearch(currentValue);
+    }
+
+    async subscribeToTopicFromSuggestions(topicId, topicName) {
+        try {
+            const userId = this.getUserId();
+            if (!userId) {
+                this.showToast('Please log in to subscribe to topics', 'error');
+                return;
+            }
+
+            await this.apiCall(`/core/users/${userId}/topics/${topicId}/subscribe`, {
+                method: 'POST'
+            });
+            
+            this.showToast(`Successfully subscribed to "${topicName}"!`, 'success');
+            
+            // Refresh the suggestions to show updated subscription status
+            const searchInput = document.getElementById('topics-search-input');
+            const currentValue = searchInput ? searchInput.value.trim() : '';
+            await this.handleTopicsSearch(currentValue);
+            
+            // Refresh main regulatory data to show updated subscription status
+            this.cache.clear();
+            await this.loadRegulatoryData();
+            
+        } catch (error) {
+            console.error('Failed to subscribe to topic:', error);
+            this.showToast('Failed to subscribe to topic. Please try again.', 'error');
+        }
+    }
+
+    async showPartnerDetails(keywordId) {
+        try {
+            console.log(`Loading partner details for: ${keywordId}`);
+            this.showScreen('partner-details');
+            
+            // Load keyword details from extension API
+            const keywordDetails = await this.apiCall(`/extension/horizon/keywords/${keywordId}/details`);
+            
+            console.log('Partner details received:', keywordDetails);
+            
+            // Validate response
+            if (!keywordDetails || !keywordDetails.topic_name) {
+                throw new Error('Invalid partner details response');
+            }
+            
+            // Extract keyword info from details response
+            let keywordName = keywordDetails.topic_name;
+            let keywordKind = 'unknown';
+            
+            if (keywordDetails.topic_name.includes('(')) {
+                const parts = keywordDetails.topic_name.split('(');
+                keywordName = parts[0].trim();
+                if (parts[1]) {
+                    keywordKind = parts[1].replace(')', '').trim();
+                }
+            }
+            
+            // Update partner details screen
+            document.getElementById('partner-details-title').textContent = `${keywordName}`;
+            
+            // Show meta summary if available
+            const metaSummaryContainer = document.getElementById('partner-screen-meta-summary');
+            const hasRealSummary = keywordDetails.meta_summary && 
+                                 !keywordDetails.meta_summary.includes('No meta summary available');
+            
+            if (hasRealSummary) {
+                metaSummaryContainer.innerHTML = this.formatMetaSummary(keywordDetails.meta_summary);
+            } else {
+                metaSummaryContainer.innerHTML = '<p class="no-summary">No summary available yet</p>';
+            }
+            
+            // Update last updated
+            const lastUpdatedElement = document.getElementById('partner-screen-last-updated');
+            if (lastUpdatedElement) {
+                lastUpdatedElement.textContent = keywordDetails.last_updated ? 
+                    `Last updated: ${this.formatDate(keywordDetails.last_updated)}` : 
+                    'No recent updates';
+            }
+            
+            // Show feed entries
+            const feedListContainer = document.getElementById('partner-feed-list');
+            if (keywordDetails.feed_entries && keywordDetails.feed_entries.length > 0) {
+                this.renderPartnerScreenFeedEntries(keywordDetails.feed_entries, feedListContainer);
+                
+                // Calculate and show aggregated sentiment
+                const aggregatedSentiment = this.calculateSentiment(keywordDetails.feed_entries);
+                this.showPartnerSentimentIndicator(aggregatedSentiment);
+            } else {
+                feedListContainer.innerHTML = '<p class="no-summary">No recent updates available yet.</p>';
+            }
+            
+            // Store keyword ID and data for edit/delete actions
+            const screen = document.getElementById('partner-details');
+            screen.setAttribute('data-keyword-id', keywordId);
+            screen.setAttribute('data-keyword-name', keywordName);
+            
+        } catch (error) {
+            console.error('Failed to load partner details:', error);
+            this.showToast('Failed to load partner details', 'error');
+            this.showScreen('main-dashboard');
+        }
+    }
+
+    renderPartnerScreenFeedEntries(feedEntries, container) {
+        if (!feedEntries || feedEntries.length === 0) {
+            container.innerHTML = '<p class="no-summary">No recent updates available yet.</p>';
+            return;
+        }
+
+        // Sort entries by published date (latest first)
+        const sortedEntries = [...feedEntries].sort((a, b) => {
+            const dateA = new Date(a.published_date);
+            const dateB = new Date(b.published_date);
+            return dateB - dateA;
+        });
+
+        container.innerHTML = sortedEntries.map(entry => `
+            <div class="link-item" data-entry-id="${entry.entry_id}">
+                <div class="link-header">
+                    <div class="link-title">
+                        <a href="${entry.link}" target="_blank" rel="noopener noreferrer" class="link-title-text" title="${this.escapeHtml(entry.title)}">
+                            ${this.escapeHtml(this.truncateText(entry.title, 5))}
+                        </a>
+                    </div>
+                    <div class="link-meta">
+                        <span>${this.formatActualDate(entry.published_date)}</span>
+                    </div>
+                    <div class="link-actions">
+                        <button class="link-action-icon" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
+                            📤
+                        </button>
+                        <button class="link-action-icon disabled" disabled title="Extract Names (Coming Soon)">
+                            👥
+                        </button>
+                        <button class="link-action-icon disabled" disabled title="Extract Timelines (Coming Soon)">
+                            📅
+                        </button>
+                    </div>
+                </div>
+                <div class="entry-sentiment">
+                    <span>Sentiment: ${this.capitalize(entry.sentiment || 'neutral')}</span>
+                </div>
+                <div class="link-summary-text">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
+            </div>
+        `).join('');
+        
+        // Add event listeners for actions
+        this.addActionButtonListeners(container);
+    }
+
+    showPartnerSentimentIndicator(sentiment) {
+        const sentimentIndicator = document.getElementById('partner-sentiment-indicator');
+        const sentimentLabel = document.getElementById('partner-sentiment-label');
+        const sentimentFill = document.getElementById('partner-sentiment-fill');
+        
+        if (sentimentIndicator && sentimentLabel && sentimentFill) {
+            sentimentIndicator.classList.remove('hidden');
+            
+            // Set sentiment label and color
+            const sentimentConfig = {
+                positive: { label: 'Positive', color: '#10b981', percentage: 80 },
+                negative: { label: 'Negative', color: '#ef4444', percentage: 80 },
+                neutral: { label: 'Neutral', color: '#f59e0b', percentage: 50 }
+            };
+            
+            const config = sentimentConfig[sentiment] || sentimentConfig.neutral;
+            sentimentLabel.textContent = `Overall Sentiment: ${config.label}`;
+            sentimentFill.style.backgroundColor = config.color;
+            sentimentFill.style.width = `${config.percentage}%`;
+        }
+    }
+
+    handleEditPartnerFromScreen() {
+        const screen = document.getElementById('partner-details');
+        const keywordId = screen.getAttribute('data-keyword-id');
+        const keywordName = screen.getAttribute('data-keyword-name');
+        
+        if (keywordId && keywordName) {
+            // Find the partner data to get frequency
+            const partnerTile = document.querySelector(`[data-keyword-id="${keywordId}"]`);
+            const frequency = partnerTile ? partnerTile.getAttribute('data-keyword-frequency') || 'daily' : 'daily';
+            
+            this.showEditPartnerModal(keywordId, keywordName, frequency);
+        }
+    }
+
+    handleDeletePartnerFromScreen() {
+        const screen = document.getElementById('partner-details');
+        const keywordId = screen.getAttribute('data-keyword-id');
+        const keywordName = screen.getAttribute('data-keyword-name');
+        
+        if (keywordId && keywordName) {
+            this.confirmDeletePartner(keywordId, keywordName);
         }
     }
 
@@ -2065,6 +2418,22 @@ class RegulatoryMonitorSidePanel {
                 })
             });
 
+            console.log('Partner creation result:', result);
+
+            // Trigger workflow for the newly created keyword
+            if (result && result.id) {
+                console.log('Attempting to trigger workflow for keyword_id:', result.id);
+                try {
+                    const workflowResult = await this.triggerKeywordWorkflow(result.id);
+                    console.log('Workflow triggered successfully:', workflowResult);
+                } catch (workflowError) {
+                    console.error('Failed to trigger workflow:', workflowError);
+                    // Don't fail the entire operation if workflow trigger fails
+                }
+            } else {
+                console.warn('No id found in result:', result);
+            }
+
             this.hideAddPartnerModal();
             this.showToast('Partner added successfully!', 'success');
             await this.refreshPartnerData();
@@ -2074,6 +2443,25 @@ class RegulatoryMonitorSidePanel {
             this.showPartnerError('Failed to add partner. Please try again.');
         } finally {
             this.setPartnerSaving(false);
+        }
+    }
+
+    async triggerKeywordWorkflow(keywordId) {
+        try {
+            console.log('Triggering SERP search for keyword_id:', keywordId);
+            console.log('Making API call to:', `/horizon/keywords/${keywordId}/search`);
+            
+            // Trigger the SERP search for the new keyword
+            const response = await this.apiCall(`/horizon/keywords/${keywordId}/search`, {
+                method: 'POST'
+            });
+            
+            console.log('SERP search API response:', response);
+            return response;
+        } catch (error) {
+            console.error('Failed to trigger keyword search:', error);
+            console.error('Error details:', error);
+            throw error;
         }
     }
 
@@ -2101,24 +2489,40 @@ class RegulatoryMonitorSidePanel {
         }
     }
 
-    hidePartnerDetailsModal() {
-        const modal = document.getElementById('partner-details-modal');
-        if (modal) {
-            modal.classList.add('hidden');
-        }
+
+    formatShareSummary(summary) {
+        if (!summary) return '';
+        
+        // Format bullet points with proper line breaks
+        let formattedSummary = summary.replace(/•\s*/g, '<br/>• ');
+        
+        // Remove leading <br/> if it exists
+        formattedSummary = formattedSummary.replace(/^<br\/>/, '');
+        
+        // Highlight key terms (simple approach - can be enhanced)
+        const keywords = ['regulatory', 'compliance', 'bank', 'financial', 'policy', 'requirement', 'guideline', 'framework', 'announcement', 'update'];
+        keywords.forEach(keyword => {
+            const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
+            formattedSummary = formattedSummary.replace(regex, '<strong>$1</strong>');
+        });
+        
+        return formattedSummary;
     }
 
     showShareSummaryModal(title, url, summary) {
         // Populate modal content
         document.getElementById('share-title').textContent = title;
         document.getElementById('share-url').textContent = url;
-        document.getElementById('share-summary').textContent = summary;
+        
+        // Format and display summary with HTML
+        const summaryElement = document.getElementById('share-summary');
+        summaryElement.innerHTML = this.formatShareSummary(summary);
         
         // Show modal
         const modal = document.getElementById('share-summary-modal');
         modal.classList.remove('hidden');
         
-        // Store data for copying
+        // Store data for copying (keep original text for clipboard)
         this.shareSummaryData = {
             title: title,
             url: url,
@@ -2145,6 +2549,202 @@ class RegulatoryMonitorSidePanel {
         } catch (error) {
             console.error('Failed to copy to clipboard:', error);
             this.showToast('Failed to copy to clipboard', 'error');
+        }
+    }
+
+    // Topic Summary Modal Methods
+    showTopicSummaryModal() {
+        const titleElement = document.getElementById('tag-details-title');
+        const summaryElement = document.getElementById('tag-meta-summary');
+        
+        if (!titleElement || !summaryElement) {
+            this.showToast('No summary available to share', 'error');
+            return;
+        }
+        
+        const title = titleElement.textContent;
+        const summary = summaryElement.textContent;
+        
+        // Populate modal content
+        document.getElementById('overall-topic-summary-title').textContent = title;
+        document.getElementById('overall-topic-summary-text').textContent = summary;
+        
+        // Show modal
+        const modal = document.getElementById('overall-topic-summary-modal');
+        modal.classList.remove('hidden');
+    }
+
+    hideTopicSummaryModal() {
+        const modal = document.getElementById('overall-topic-summary-modal');
+        modal.classList.add('hidden');
+    }
+
+    async copyTopicSummary() {
+        const title = document.getElementById('overall-topic-summary-title').textContent;
+        const summary = document.getElementById('overall-topic-summary-text').textContent;
+        
+        const textToCopy = `${title}\n\n${summary}\n\nGenerated on: https://carveragents.ai`;
+        
+        try {
+            await navigator.clipboard.writeText(textToCopy);
+            this.showToast('Topic summary copied to clipboard!', 'success');
+            this.hideTopicSummaryModal();
+        } catch (error) {
+            console.error('Failed to copy to clipboard:', error);
+            this.showToast('Failed to copy to clipboard', 'error');
+        }
+    }
+
+    // Partner Summary Modal Methods
+    showPartnerSummaryModal() {
+        const titleElement = document.getElementById('partner-details-title');
+        const summaryElement = document.getElementById('partner-screen-meta-summary');
+        
+        if (!titleElement || !summaryElement) {
+            this.showToast('No summary available to share', 'error');
+            return;
+        }
+        
+        const title = titleElement.textContent;
+        const summary = summaryElement.textContent;
+        
+        // Populate modal content
+        document.getElementById('overall-partner-summary-title').textContent = title;
+        document.getElementById('overall-partner-summary-text').textContent = summary;
+        
+        // Show modal
+        const modal = document.getElementById('overall-partner-summary-modal');
+        modal.classList.remove('hidden');
+    }
+
+    hidePartnerSummaryModal() {
+        const modal = document.getElementById('overall-partner-summary-modal');
+        modal.classList.add('hidden');
+    }
+
+    async copyPartnerSummary() {
+        const title = document.getElementById('overall-partner-summary-title').textContent;
+        const summary = document.getElementById('overall-partner-summary-text').textContent;
+        
+        const textToCopy = `${title}\n\n${summary}\n\nGenerated on: https://carveragents.ai`;
+        
+        try {
+            await navigator.clipboard.writeText(textToCopy);
+            this.showToast('Partner summary copied to clipboard!', 'success');
+            this.hidePartnerSummaryModal();
+        } catch (error) {
+            console.error('Failed to copy to clipboard:', error);
+            this.showToast('Failed to copy to clipboard', 'error');
+        }
+    }
+
+    // Unsubscribe Confirmation Modal Methods
+    showUnsubscribeConfirmModal(topicId, topicName, source) {
+        document.getElementById('unsubscribe-topic-name').textContent = topicName;
+        
+        // Store the topic info for confirmation
+        this.pendingUnsubscribe = { topicId, topicName, source };
+        
+        const modal = document.getElementById('unsubscribe-confirm-modal');
+        modal.classList.remove('hidden');
+    }
+
+    hideUnsubscribeConfirmModal() {
+        const modal = document.getElementById('unsubscribe-confirm-modal');
+        modal.classList.add('hidden');
+        this.pendingUnsubscribe = null;
+    }
+
+    async confirmUnsubscribe() {
+        if (!this.pendingUnsubscribe) return;
+        
+        const { topicId, topicName, source } = this.pendingUnsubscribe;
+        const confirmBtn = document.getElementById('confirm-unsubscribe-btn');
+        const btnText = confirmBtn.querySelector('.btn-text');
+        const btnSpinner = confirmBtn.querySelector('.btn-spinner');
+        
+        // Show loading state
+        confirmBtn.disabled = true;
+        btnText.textContent = 'Unsubscribing...';
+        btnSpinner.classList.remove('hidden');
+        
+        try {
+            const userId = this.getUserId();
+            if (!userId) {
+                this.showToast('User information not available', 'error');
+                return;
+            }
+
+            await this.apiCall(`/core/users/${userId}/topics/${topicId}/unsubscribe`, {
+                method: 'DELETE'
+            });
+            
+            this.showToast(`Successfully unsubscribed from "${topicName}"!`, 'success');
+            this.hideUnsubscribeConfirmModal();
+            
+            // Refresh the appropriate page
+            await this.refreshAfterSubscriptionChange(source);
+            
+        } catch (error) {
+            console.error('Failed to unsubscribe:', error);
+            this.showToast('Failed to unsubscribe. Please try again.', 'error');
+        } finally {
+            // Reset button state
+            confirmBtn.disabled = false;
+            btnText.textContent = 'Unsubscribe';
+            btnSpinner.classList.add('hidden');
+        }
+    }
+
+    async subscribeToTopicFromSearch(topicId, topicName) {
+        try {
+            const userId = this.getUserId();
+            if (!userId) {
+                this.showToast('User information not available', 'error');
+                return;
+            }
+
+            await this.apiCall(`/core/users/${userId}/topics/${topicId}/subscribe`, {
+                method: 'POST'
+            });
+            
+            this.showToast(`Successfully subscribed to "${topicName}"!`, 'success');
+            
+            // Refresh the search results
+            await this.refreshAfterSubscriptionChange('search');
+            
+        } catch (error) {
+            console.error('Failed to subscribe:', error);
+            this.showToast('Failed to subscribe. Please try again.', 'error');
+        }
+    }
+
+    async refreshAfterSubscriptionChange(source) {
+        // Clear cache to force fresh data
+        this.cache.clear();
+        
+        if (source === 'search') {
+            // Refresh search results
+            const searchInput = document.getElementById('search-input');
+            const query = searchInput?.value?.trim() || '';
+            if (query) {
+                await this.handleSearchScreenSearch();
+            } else {
+                // Show recommendations
+                const results = await this.apiCall('/extension/topics/recommendations');
+                this.renderSearchResults(results, true);
+            }
+        } else if (source === 'suggestions') {
+            // Refresh topics suggestions
+            const searchInput = document.getElementById('topics-search-input');
+            const currentValue = searchInput ? searchInput.value.trim() : '';
+            await this.handleTopicsSearch(currentValue);
+            
+            // Refresh main dashboard
+            await this.loadRegulatoryData();
+        } else {
+            // Refresh main dashboard
+            await this.loadRegulatoryData();
         }
     }
 
@@ -2325,11 +2925,46 @@ class RegulatoryMonitorSidePanel {
     }
 
     // Delete Partner Function
-    async confirmDeletePartner(keywordId, keywordName) {
-        const confirmed = confirm(`Are you sure you want to delete "${keywordName}"?\n\nThis action cannot be undone.`);
+    confirmDeletePartner(keywordId, keywordName) {
+        document.getElementById('delete-partner-name').textContent = keywordName;
         
-        if (confirmed) {
+        // Store the partner info for confirmation
+        this.pendingDeletePartner = { keywordId, keywordName };
+        
+        const modal = document.getElementById('delete-partner-confirm-modal');
+        modal.classList.remove('hidden');
+    }
+
+    hideDeletePartnerConfirmModal() {
+        const modal = document.getElementById('delete-partner-confirm-modal');
+        modal.classList.add('hidden');
+        this.pendingDeletePartner = null;
+    }
+
+    async confirmDeletePartnerFromModal() {
+        if (!this.pendingDeletePartner) return;
+        
+        const { keywordId, keywordName } = this.pendingDeletePartner;
+        const confirmBtn = document.getElementById('confirm-delete-partner-btn');
+        const btnText = confirmBtn.querySelector('.btn-text');
+        const btnSpinner = confirmBtn.querySelector('.btn-spinner');
+        
+        // Show loading state
+        confirmBtn.disabled = true;
+        btnText.textContent = 'Deleting...';
+        btnSpinner.classList.remove('hidden');
+        
+        try {
             await this.deletePartner(keywordId, keywordName);
+            this.hideDeletePartnerConfirmModal();
+        } catch (error) {
+            console.error('Failed to delete partner from modal:', error);
+            this.showToast('Failed to delete partner. Please try again.', 'error');
+        } finally {
+            // Reset button state
+            confirmBtn.disabled = false;
+            btnText.textContent = 'Delete';
+            btnSpinner.classList.add('hidden');
         }
     }
 
@@ -2340,6 +2975,13 @@ class RegulatoryMonitorSidePanel {
             });
 
             this.showToast(`Partner "${keywordName}" deleted successfully!`, 'success');
+            
+            // If we're on the partner details screen, return to main dashboard
+            if (this.currentScreen === 'partner-details') {
+                this.showScreen('main-dashboard');
+                this.switchTab('horizon');
+            }
+            
             await this.refreshPartnerData();
             
         } catch (error) {

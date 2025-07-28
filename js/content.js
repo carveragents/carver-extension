@@ -19,15 +19,16 @@ class RegulatoryMonitorFloatingButton {
 
         // Don't inject on extension pages
         if (window.location.protocol === 'chrome-extension:' || 
-            window.location.protocol === 'moz-extension:' ||
-            window.location.hostname === 'chrome.google.com') {
-            console.log('Skipping: on extension/chrome page');
+            window.location.protocol === 'moz-extension:') {
+            console.log('Skipping: on extension page');
             return;
         }
 
         console.log('Creating floating button...');
         this.createFloatingButton();
         this.setupEventListeners();
+        this.setupSidePanelListener();
+        this.setupThemeListener();
         
         // Show button after a short delay
         setTimeout(() => {
@@ -53,10 +54,10 @@ class RegulatoryMonitorFloatingButton {
         this.button.setAttribute('aria-label', 'Open Carver Agent');
         this.button.title = 'Carver Agent';
         
-        // Add the button content with a simpler icon
+        // Add the button content with Carver icon
         this.button.innerHTML = `
             <div class="rm-btn-icon">
-                📋
+                <img src="${chrome.runtime.getURL('icons/icon32.png')}" alt="Carver" style="width: 24px; height: 24px; border-radius: 4px;">
             </div>
             <div class="rm-btn-tooltip">Carver Agent</div>
         `;
@@ -64,11 +65,11 @@ class RegulatoryMonitorFloatingButton {
         // Apply inline styles directly (more reliable than CSS classes)
         Object.assign(this.button.style, {
             position: 'fixed',
-            bottom: '20px',
-            right: '20px',
+            bottom: '120px',
+            right: '2px',
             width: '56px',
             height: '56px',
-            background: '#6b7280',
+            background: this.getThemeAwareBackground(),
             borderRadius: '50%',
             boxShadow: '0 4px 20px rgba(107, 114, 128, 0.4)',
             cursor: 'pointer',
@@ -205,6 +206,56 @@ class RegulatoryMonitorFloatingButton {
                 this.button.style.transform = this.isVisible ? 'scale(1)' : 'scale(0)';
             }, 100);
         }
+    }
+
+    setupSidePanelListener() {
+        // Listen for side panel state changes from background script
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            if (message.action === 'sidePanelStateChanged') {
+                if (message.isOpen) {
+                    console.log('Side panel opened, hiding floating button');
+                    this.hideButton();
+                } else {
+                    console.log('Side panel closed, showing floating button');
+                    this.showButton();
+                }
+            }
+        });
+    }
+
+    getThemeAwareBackground() {
+        // Check if user prefers dark mode
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        return prefersDark ? '#bae424' : '#000000'; // Green for dark theme, black for light theme
+    }
+
+    updateButtonTheme() {
+        if (!this.button) return;
+        
+        const newBackground = this.getThemeAwareBackground();
+        this.button.style.background = newBackground;
+        
+        // Update shadow color to match new background
+        const shadowColor = newBackground === '#bae424' ? 
+            '0 4px 20px rgba(186, 228, 36, 0.4)' : 
+            '0 4px 20px rgba(0, 0, 0, 0.4)';
+        this.button.style.boxShadow = shadowColor;
+        
+        console.log('Updated floating button theme:', newBackground);
+    }
+
+    setupThemeListener() {
+        // Listen for theme changes
+        const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        
+        // Initial setup
+        console.log('Current theme:', darkModeQuery.matches ? 'dark' : 'light');
+        
+        // Listen for changes
+        darkModeQuery.addEventListener('change', (e) => {
+            console.log('Theme changed to:', e.matches ? 'dark' : 'light');
+            this.updateButtonTheme();
+        });
     }
 
     destroy() {

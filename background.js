@@ -5,6 +5,7 @@ class BackgroundService {
         this.apiBaseUrl = `${this.apiHost}/api/v1`;
         this.refreshInterval = 15 * 60 * 1000; // 15 minutes
         this.alarmName = 'regulatoryMonitorRefresh';
+        this.sidePanelState = new Map(); // Track sidepanel state per tab
         
         this.init();
     }
@@ -77,6 +78,9 @@ class BackgroundService {
                 return true; // Keep message channel open for async response
             });
         }
+
+        // Track sidepanel state changes
+        this.setupSidePanelTracking();
 
         console.log('Carver Agents background service initialized');
     }
@@ -209,9 +213,61 @@ class BackgroundService {
             if (chrome.sidePanel) {
                 await chrome.sidePanel.open({ tabId: tab.id });
                 console.log('Side panel opened for tab:', tab.id);
+                
+                // Track sidepanel state and notify content script
+                this.sidePanelState.set(tab.id, true);
+                this.notifyContentScript(tab.id, true);
             }
         } catch (error) {
             console.error('Failed to open side panel:', error);
+        }
+    }
+
+    notifyContentScript(tabId, isOpen) {
+        // Notify content script of sidepanel state change
+        chrome.tabs.sendMessage(tabId, {
+            action: 'sidePanelStateChanged',
+            isOpen: isOpen
+        }).catch(error => {
+            // Content script might not be ready or tab might be closed
+            console.log('Could not notify content script:', error.message);
+        });
+    }
+
+    setupSidePanelTracking() {
+        // Listen for tab activation changes (user switches tabs)
+        if (chrome.tabs.onActivated) {
+            chrome.tabs.onActivated.addListener((activeInfo) => {
+                // When user switches to a tab, assume sidepanel is closed
+                this.sidePanelState.forEach((isOpen, tabId) => {
+                    if (tabId !== activeInfo.tabId && isOpen) {
+                        this.sidePanelState.set(tabId, false);
+                        this.notifyContentScript(tabId, false);
+                    }
+                });
+            });
+        }
+
+        // Listen for window focus changes
+        if (chrome.windows.onFocusChanged) {
+            chrome.windows.onFocusChanged.addListener((windowId) => {
+                if (windowId === chrome.windows.WINDOW_ID_NONE) {
+                    // Window lost focus, assume all sidepanels closed
+                    this.sidePanelState.forEach((isOpen, tabId) => {
+                        if (isOpen) {
+                            this.sidePanelState.set(tabId, false);
+                            this.notifyContentScript(tabId, false);
+                        }
+                    });
+                }
+            });
+        }
+
+        // Clean up state when tabs are closed
+        if (chrome.tabs.onRemoved) {
+            chrome.tabs.onRemoved.addListener((tabId) => {
+                this.sidePanelState.delete(tabId);
+            });
         }
     }
 

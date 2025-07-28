@@ -84,13 +84,12 @@
                     </div>
                 </div>
                 <div class="header-right">
-                    <span id="user-name" class="user-name"></span>
                     <div class="header-actions">
                         <button id="support-btn" class="action-btn" title="Support">
-                            💬
+                            ?
                         </button>
                         <button id="settings-btn" class="action-btn" title="Settings">
-                            ⚙️
+                            ⚙
                         </button>
                     </div>
                 </div>
@@ -98,8 +97,8 @@
             
             <!-- Tab Navigation -->
             <div class="tab-navigation">
-                <button id="regulatory-tab" class="tab-btn active">📋 Regulatory</button>
-                <button id="horizon-tab" class="tab-btn">🔭 Partner Watch</button>
+                <button id="regulatory-tab" class="tab-btn active">Regulatory</button>
+                <button id="horizon-tab" class="tab-btn">Partner Watch</button>
             </div>
             
             <div class="content">
@@ -114,8 +113,8 @@
                             </div>
                         </div>
                         <div class="topics-actions">
-                            <button id="subscriptions-btn" class="icon-btn" title="My Subscriptions">📌</button>
-                            <button id="refresh-btn" class="icon-btn" title="Refresh Topics">🔄</button>
+                            <button id="subscriptions-btn" class="icon-btn" title="My Subscriptions">★</button>
+                            <button id="refresh-btn" class="icon-btn" title="Refresh Topics">↻</button>
                         </div>
                     </div>
 
@@ -148,8 +147,8 @@
                                 <!-- Partner suggestions will be dynamically inserted here -->
                             </div>
                         </div>
-                        <div class="partner-actions">
-                            <button id="horizon-refresh-btn" class="icon-btn" title="Refresh Partners">🔄</button>
+                        <div class="partner-header-actions">
+                            <button id="horizon-refresh-btn" class="icon-btn" title="Refresh Partners">↻</button>
                             <button id="add-partner-btn" class="icon-btn" title="Add Partner">+</button>
                         </div>
                     </div>
@@ -178,7 +177,7 @@
         <!-- Tag Details Screen -->
         <div id="tag-details" class="screen hidden">
             <div class="header">
-                <button id="back-btn" class="icon-btn">← Back</button>
+                <button id="back-btn" class="icon-btn">←</button>
                 <h1 id="tag-details-title"></h1>
                 <button id="subscribe-tag-btn" class="btn btn-small">
                     <span class="subscribe-text">Subscribe</span>
@@ -189,7 +188,12 @@
             <div class="content">
                 <!-- Tag Meta Summary -->
                 <div class="meta-summary">
-                    <h3>Summary</h3>
+                    <div class="summary-header">
+                        <h3>Summary</h3>
+                        <button id="share-topic-summary" class="btn btn-small btn-secondary share-summary-btn" title="Share Summary">
+                            📤 Share
+                        </button>
+                    </div>
                     <p id="tag-meta-summary"></p>
                     <small id="tag-last-updated"></small>
                 </div>
@@ -204,10 +208,48 @@
             </div>
         </div>
 
+        <!-- Partner Details Screen -->
+        <div id="partner-details" class="screen hidden">
+            <div class="header">
+                <button id="partner-back-btn" class="icon-btn">←</button>
+                <h1 id="partner-details-title"></h1>
+            </div>
+            
+            <div class="content">
+                <!-- Partner Meta Summary -->
+                <div class="meta-summary">
+                    <div class="summary-header">
+                        <h3>Summary</h3>
+                        <button id="share-partner-summary" class="btn btn-small btn-secondary share-summary-btn" title="Share Summary">
+                            📤 Share
+                        </button>
+                    </div>
+                    <div id="partner-screen-meta-summary" class="meta-summary-content">
+                        <p class="no-summary">No summary available yet</p>
+                    </div>
+                    <small id="partner-screen-last-updated"></small>
+                    <div id="partner-sentiment-indicator" class="sentiment-indicator hidden">
+                        <span class="sentiment-label" id="partner-sentiment-label"></span>
+                        <div class="sentiment-bar">
+                            <div class="sentiment-fill" id="partner-sentiment-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Partner Recent Updates -->
+                <div class="link-summaries">
+                    <h3>Recent Updates</h3>
+                    <div id="partner-feed-list">
+                        <!-- Partner feed items will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Search Results Screen -->
         <div id="search-results" class="screen hidden">
             <div class="header">
-                <button id="search-back-btn" class="icon-btn">← Back</button>
+                <button id="search-back-btn" class="icon-btn">←</button>
                 <h1>Browse Topics</h1>
             </div>
             
@@ -216,7 +258,7 @@
                 <div class="search-section">
                     <div class="search-box">
                         <input type="text" id="search-input" placeholder="Search for topics...">
-                        <button id="search-execute-btn" class="icon-btn">🔍</button>
+                        <button id="search-execute-btn" class="icon-btn">⌕</button>
                     </div>
                 </div>
                 
@@ -233,7 +275,7 @@
         <!-- Subscriptions Screen -->
         <div id="subscriptions-screen" class="screen hidden">
             <div class="header">
-                <button id="subscriptions-back-btn" class="icon-btn">← Back</button>
+                <button id="subscriptions-back-btn" class="icon-btn">←</button>
                 <h1>My Subscriptions</h1>
             </div>
             
@@ -319,36 +361,45 @@
             </div>
         </div>
 
-        <!-- Partner Details Modal -->
-        <div id="partner-details-modal" class="modal hidden">
+
+        <!-- Unsubscribe Confirmation Modal -->
+        <div id="unsubscribe-confirm-modal" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 id="partner-details-title">Partner Details</h3>
-                    <button id="close-partner-details" class="modal-close">×</button>
+                    <h3>Confirm Unsubscribe</h3>
+                    <button id="close-unsubscribe-confirm-modal" class="modal-close">×</button>
                 </div>
                 <div class="modal-body">
-                    <div class="meta-summary-section">
-                        <h4>Latest Summary</h4>
-                        <div id="partner-meta-summary" class="meta-summary-content">
-                            <p class="no-summary">No summary available yet</p>
-                        </div>
-                        <div id="sentiment-indicator" class="sentiment-indicator hidden">
-                            <span class="sentiment-label" id="sentiment-label"></span>
-                            <div class="sentiment-bar">
-                                <div class="sentiment-fill" id="sentiment-fill"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="recent-summaries">
-                        <h4>Recent Updates</h4>
-                        <div id="recent-summaries-list">
-                            <!-- Recent summaries will be loaded here -->
-                        </div>
-                    </div>
+                    <p>Are you sure you want to unsubscribe from <strong id="unsubscribe-topic-name"></strong>?</p>
+                    <p>You will no longer receive updates for this topic.</p>
                 </div>
                 <div class="modal-footer">
-                    <!-- Buttons removed as requested -->
+                    <button id="cancel-unsubscribe-btn" class="btn btn-secondary">Cancel</button>
+                    <button id="confirm-unsubscribe-btn" class="btn btn-danger">
+                        <span class="btn-text">Unsubscribe</span>
+                        <div class="btn-spinner hidden"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Partner Confirmation Modal -->
+        <div id="delete-partner-confirm-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Confirm Delete</h3>
+                    <button id="close-delete-partner-confirm-modal" class="modal-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete <strong id="delete-partner-name"></strong>?</p>
+                    <p>This action cannot be undone and will remove all associated data.</p>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancel-delete-partner-btn" class="btn btn-secondary">Cancel</button>
+                    <button id="confirm-delete-partner-btn" class="btn btn-danger">
+                        <span class="btn-text">Delete</span>
+                        <div class="btn-spinner hidden"></div>
+                    </button>
                 </div>
             </div>
         </div>
@@ -382,19 +433,17 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>Share Summary</h3>
+                    <button id="close-share-modal" class="modal-close">×</button>
                 </div>
                 <div class="modal-body">
                     <div class="share-content">
                         <div class="share-field">
-                            <label>Title:</label>
                             <p id="share-title"></p>
                         </div>
                         <div class="share-field">
-                            <label>URL:</label>
                             <p id="share-url"></p>
                         </div>
                         <div class="share-field">
-                            <label>Summary:</label>
                             <p id="share-summary"></p>
                         </div>
                     </div>
@@ -408,10 +457,97 @@
             </div>
         </div>
 
+        <!-- Overall Summary Share Modal -->
+        <div id="overall-topic-summary-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Share Topic Summary</h3>
+                    <button id="close-overall-topic-summary-modal" class="modal-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="overall-summary-content">
+                        <div class="summary-title-section">
+                            <h4 id="overall-topic-summary-title"></h4>
+                        </div>
+                        <div class="summary-text-section">
+                            <p id="overall-topic-summary-text"></p>
+                        </div>
+                        <div class="summary-footer">
+                            <p>Generated on: <a href="https://carveragents.ai" target="_blank">https://carveragents.ai</a></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="copy-overall-topic-summary-btn" class="btn btn-primary">
+                        <span class="btn-text">Copy to Clipboard</span>
+                        <div class="btn-spinner hidden"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overall Partner Summary Share Modal -->
+        <div id="overall-partner-summary-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Share Partner Summary</h3>
+                    <button id="close-overall-partner-summary-modal" class="modal-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="overall-summary-content">
+                        <div class="summary-title-section">
+                            <h4 id="overall-partner-summary-title"></h4>
+                        </div>
+                        <div class="summary-text-section">
+                            <p id="overall-partner-summary-text"></p>
+                        </div>
+                        <div class="summary-footer">
+                            <p>Generated on: <a href="https://carveragents.ai" target="_blank">https://carveragents.ai</a></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="copy-overall-partner-summary-btn" class="btn btn-primary">
+                        <span class="btn-text">Copy to Clipboard</span>
+                        <div class="btn-spinner hidden"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overall Summary Share Modal -->
+        <div id="overall-summary-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Share Overall Summary</h3>
+                    <button id="close-overall-summary-modal" class="modal-close">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="overall-summary-content">
+                        <div class="summary-title-section">
+                            <h4 id="overall-summary-title"></h4>
+                        </div>
+                        <div class="summary-text-section">
+                            <p id="overall-summary-text"></p>
+                        </div>
+                        <div class="summary-footer">
+                            <p>Generated on: <a href="https://carveragents.ai" target="_blank">https://carveragents.ai</a></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="copy-overall-summary-btn" class="btn btn-primary">
+                        <span class="btn-text">Copy to Clipboard</span>
+                        <div class="btn-spinner hidden"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Settings Screen -->
         <div id="settings-screen" class="screen hidden">
             <div class="header">
-                <button id="settings-back-btn" class="icon-btn">← Back</button>
+                <button id="settings-back-btn" class="icon-btn">←</button>
                 <h1>Settings</h1>
             </div>
             
