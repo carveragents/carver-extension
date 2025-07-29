@@ -11,6 +11,7 @@
     "activeTab"
   ],
   "host_permissions": [
+    "https://app.carveragents.ai/*",
     "http://localhost:8000/*",
     "https://api.regulatorymonitor.com/*"
   ],

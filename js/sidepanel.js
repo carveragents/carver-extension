@@ -4,7 +4,7 @@ class RegulatoryMonitorSidePanel {
         this.apiKey = null;
         this.currentUser = null;
         this.currentScreen = 'loading';
-        this.apiHost = 'http://localhost:8000'; // Default to local development
+        this.apiHost = 'https://app.carveragents.ai'; // Default to production
         this.apiBaseUrl = `${this.apiHost}/api/v1`;
         this.cache = new Map();
         this.retryCount = 0;
@@ -25,14 +25,16 @@ class RegulatoryMonitorSidePanel {
             const result = await chrome.storage.local.get(['apiKey', 'userInfo', 'apiHost']);
             console.log('Storage result:', result);
             
-            // Force localhost for development - override any stored host
-            this.apiHost = 'http://localhost:8000';
-            this.apiBaseUrl = `${this.apiHost}/api/v1`;
+            // Load host configuration from storage, default to production
+            if (result.apiHost && !result.apiHost.includes('localhost')) {
+                this.apiHost = result.apiHost;
+                this.apiBaseUrl = `${this.apiHost}/api/v1`;
+            }
             
-            // Update storage to reflect localhost
+            // Always update storage to reflect current host (migrate from localhost if needed)
             await chrome.storage.local.set({ apiHost: this.apiHost });
             
-            // Set the host dropdown to localhost
+            // Set the host dropdown to current host
             const hostSelect = document.getElementById('host-select');
             if (hostSelect) {
                 hostSelect.value = this.apiHost;
