@@ -62,7 +62,7 @@
                 <div class="login-footer">
                     <p class="footer-text">
                         By logging in, you acknowledge that you have read and understood, and agree to 
-                        Carver Agents' <a href="https://carveragents.ai/terms" target="_blank">Terms</a> and <a href="https://carveragents.ai/privacy" target="_blank">Privacy Policy</a>.
+                        Carver Agents' <a href="https://carveragents.ai/terms-and-conditions" target="_blank">Terms</a> and <a href="https://carveragents.ai/privacy-policy" target="_blank">Privacy Policy</a>.
                     </p>
                     <p class="website-link">
                         <a href="https://carveragents.ai" target="_blank" rel="noopener noreferrer">Visit our website</a>
@@ -97,8 +97,8 @@
             
             <!-- Tab Navigation -->
             <div class="tab-navigation">
-                <button id="regulatory-tab" class="tab-btn active">Regulatory</button>
-                <button id="horizon-tab" class="tab-btn">Partner Watch</button>
+                <button id="regulatory-tab" class="tab-btn active">RegWatch</button>
+                <button id="horizon-tab" class="tab-btn">PartnerWatch</button>
             </div>
             
             <div class="content">
@@ -179,21 +179,19 @@
             <div class="header">
                 <button id="back-btn" class="icon-btn">←</button>
                 <h1 id="tag-details-title"></h1>
-                <button id="subscribe-tag-btn" class="btn btn-small">
-                    <span class="subscribe-text">Subscribe</span>
-                    <span class="unsubscribe-text hidden">Unsubscribe</span>
-                </button>
             </div>
             
             <div class="content">
+                <!-- Summary Title -->
+                <div class="section-header">
+                    <h3>Summary</h3>
+                    <button id="share-topic-summary" class="btn btn-small btn-secondary share-summary-btn" title="Share Summary">
+                        📤 Share
+                    </button>
+                </div>
+                
                 <!-- Tag Meta Summary -->
                 <div class="meta-summary">
-                    <div class="summary-header">
-                        <h3>Summary</h3>
-                        <button id="share-topic-summary" class="btn btn-small btn-secondary share-summary-btn" title="Share Summary">
-                            📤 Share
-                        </button>
-                    </div>
                     <p id="tag-meta-summary"></p>
                     <small id="tag-last-updated"></small>
                 </div>
@@ -216,14 +214,16 @@
             </div>
             
             <div class="content">
+                <!-- Summary Title -->
+                <div class="section-header">
+                    <h3>Summary</h3>
+                    <button id="share-partner-summary" class="btn btn-small btn-secondary share-summary-btn" title="Share Summary">
+                        📤 Share
+                    </button>
+                </div>
+                
                 <!-- Partner Meta Summary -->
                 <div class="meta-summary">
-                    <div class="summary-header">
-                        <h3>Summary</h3>
-                        <button id="share-partner-summary" class="btn btn-small btn-secondary share-summary-btn" title="Share Summary">
-                            📤 Share
-                        </button>
-                    </div>
                     <div id="partner-screen-meta-summary" class="meta-summary-content">
                         <p class="no-summary">No summary available yet</p>
                     </div>
@@ -432,7 +432,7 @@
         <div id="share-summary-modal" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Share Summary</h3>
+                    <h3>Update</h3>
                     <button id="close-share-modal" class="modal-close">×</button>
                 </div>
                 <div class="modal-body">
@@ -440,12 +440,17 @@
                         <div class="share-field">
                             <p id="share-title"></p>
                         </div>
+
                         <div class="share-field">
-                            <p id="share-url"></p>
-                        </div>
-                        <div class="share-field">
+                            <strong>Summary:</strong>
                             <p id="share-summary"></p>
                         </div>
+
+                        <div class="share-field">
+                            <strong>Source:</strong>
+                            <p id="share-url"></p>
+                        </div>
+                        
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -560,7 +565,7 @@
                     </div>
                     <p class="settings-terms-text">
                         By using this Chrome extension, you acknowledge that you have read and understood, and agree to 
-                        Carver Agents' <a href="https://carveragents.ai/terms" target="_blank">Terms</a> and <a href="https://carveragents.ai/privacy" target="_blank">Privacy Policy</a>.
+                        Carver Agents' <a href="https://carveragents.ai/terms-and-conditions" target="_blank">Terms</a> and <a href="https://carveragents.ai/privacy-policy" target="_blank">Privacy Policy</a>.
                     </p>
                 </div>
 
