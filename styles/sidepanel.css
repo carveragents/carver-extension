@@ -137,7 +137,7 @@ html, body {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
-    margin-bottom: 8px;
+    margin: 8px 0;
 }
 
 .link-action {
@@ -509,7 +509,7 @@ select:focus {
 .tag-summaries {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 4px;
 }
 
 .tag-card {
@@ -563,7 +563,7 @@ select:focus {
     font-size: 12px;
     color: #4b5563;
     line-height: 1.5;
-    margin-top: 8px;
+    margin-top: 4px;
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
@@ -575,11 +575,11 @@ select:focus {
     background: white;
     border: 1px solid #6b7280;
     border-radius: 12px;
-    padding: 20px;
+    padding: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -591,9 +591,8 @@ select:focus {
 
 .topic-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .topic-name {
@@ -601,7 +600,6 @@ select:focus {
     font-size: 14px;
     display: flex;
     align-items: center;
-    gap: 8px;
     color: #1a1a1a;
     font-family: 'Poppins', sans-serif;
 }
@@ -609,9 +607,7 @@ select:focus {
 .topic-meta {
     font-size: 12px;
     color: #6b7280;
-    display: flex;
     font-family: 'Poppins', sans-serif;
-    gap: 8px;
     font-weight: 400;
     line-height: 1.4;
 }
@@ -729,7 +725,6 @@ select:focus {
 .topic-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
     margin-bottom: 8px;
     width: 100%;
 }
@@ -737,7 +732,6 @@ select:focus {
 .topic-name {
     display: flex;
     align-items: center;
-    gap: 8px;
     flex-shrink: 0;
 }
 
@@ -745,18 +739,15 @@ select:focus {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 10ch;
+    max-width: 30ch;
 }
 
 .topic-meta {
     display: flex;
     align-items: center;
-    font-size: 12px;
+    font-size: 10px;
     color: #6b7280;
-    gap: 8px;
     flex: 1;
-    justify-content: center;
-    margin: 0 8px;
 }
 
 .topic-meta span {
@@ -884,7 +875,6 @@ select:focus {
     color: #6b7280;
     flex: 1;
     justify-content: center;
-    margin: 0 8px;
     white-space: nowrap;
 }
 
@@ -1429,15 +1419,37 @@ select:focus {
 #tag-details .header h1 {
     font-size: 18px;
     font-weight: 600;
+    margin-left: auto;
 }
 
 /* Meta Summary */
+/* Section Header for Details Pages */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 0 4px;
+}
+
+.section-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.section-header .share-summary-btn {
+    flex-shrink: 0;
+}
+
 .meta-summary {
     background: #f9fafb;
     border-radius: 12px;
-    padding: 20px;
+    padding: 16px;
     margin-bottom: 24px;
     border: 1px solid #e5e7eb;
+    width: 100%;
 }
 
 .summary-header {
@@ -1480,30 +1492,31 @@ select:focus {
 
 .link-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    align-items: flex-start;
+    justify-content: start;
     margin-bottom: 8px;
     gap: 12px;
     min-height: 24px;
+    margin-left: -24px;
 }
 
 .link-header .link-title {
     font-weight: 600;
     font-size: 14px;
-    color: #1a1a1a;
-    flex-shrink: 0;
-    min-width: 60px;
+    color: orange;
+    text-align: left;
+    margin-right: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .link-header .link-meta {
     font-size: 10px;
     color: #6b7280;
     flex: 1;
-    text-align: center;
+    text-align: start;
     white-space: nowrap;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .link-header .link-actions {
@@ -1538,9 +1551,16 @@ select:focus {
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
-    padding: 16px;
+    padding: 12px;
     margin-bottom: 12px;
     transition: all 0.2s ease;
+    background: rgba(255, 0, 0, 0.1);
+}
+
+.link-header,
+.link-summary-text,
+.link-published-date {
+  padding-left: 8px;
 }
 
 .link-item:hover {
@@ -1550,17 +1570,45 @@ select:focus {
 
 .link-title {
     font-weight: 600;
-    font-size: 14px;
+    font-size: 12px;
     color: #1a1a1a;
     margin-bottom: 8px;
     line-height: 1.4;
+    text-align: right;
+    flex: 1;
+    min-width: 0;
+}
+
+.link-title a {
+    display: block;
+    text-align: right;
+    text-decoration: none;
+    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .link-summary-text {
-    font-size: 13px;
+    font-size: 11px;
     color: #4b5563;
-    line-height: 1.5;
+    line-height: 1.4;
     margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.link-published-date {
+    font-size: 10px;
+    color: #6b7280;
+    font-style: italic;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e5e7eb;
+    text-align: left;
 }
 
 /* Modal Enhancements */
@@ -2084,6 +2132,197 @@ select:focus {
     line-height: 1.5;
     margin-top: 8px;
     font-style: italic;
+}
+
+/* RegWatch Details Tiles - Fresh CSS */
+.regwatch-tile {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+}
+
+.regwatch-tile:hover {
+    border-color: #1a1a1a;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.regwatch-tile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 12px;
+}
+
+.regwatch-tile-title {
+    flex: 1;
+    text-align: left;
+    margin-right: 8px;
+}
+
+.regwatch-tile-title a {
+    color: #1a1a1a;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 1.4;
+    display: block;
+    text-align: left;
+}
+
+.regwatch-tile-title a:hover {
+    color: #374151;
+}
+
+.regwatch-tile-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.regwatch-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    color: #6b7280;
+}
+
+.regwatch-action-btn:hover:not(.disabled) {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.regwatch-action-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.regwatch-tile-summary {
+    font-size: 11px;
+    color: #4b5563;
+    line-height: 1.4;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.regwatch-tile-date {
+    font-size: 10px;
+    color: #6b7280;
+    font-style: italic;
+    text-align: left;
+    padding-top: 8px;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* PartnerWatch Details Tiles - Fresh CSS */
+.partnerwatch-tile {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+}
+
+.partnerwatch-tile:hover {
+    border-color: #1a1a1a;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.partnerwatch-tile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 12px;
+}
+
+.partnerwatch-tile-title {
+    flex: 1;
+    text-align: left;
+    margin-right: 8px;
+}
+
+.partnerwatch-tile-title a {
+    color: #1a1a1a;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 1.4;
+    display: block;
+    text-align: left;
+}
+
+.partnerwatch-tile-title a:hover {
+    color: #374151;
+}
+
+.partnerwatch-tile-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.partnerwatch-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    color: #6b7280;
+}
+
+.partnerwatch-action-btn:hover:not(.disabled) {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.partnerwatch-action-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.partnerwatch-tile-sentiment {
+    font-size: 11px;
+    color: #6b7280;
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+.partnerwatch-tile-summary {
+    font-size: 11px;
+    color: #4b5563;
+    line-height: 1.4;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.partnerwatch-tile-date {
+    font-size: 10px;
+    color: #6b7280;
+    font-style: italic;
+    text-align: left;
+    padding-top: 8px;
+    border-top: 1px solid #e5e7eb;
 }
 
 /* Additional responsive and accessibility improvements */

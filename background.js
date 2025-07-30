@@ -1,6 +1,7 @@
 // Chrome Extension Background Service Worker
 class BackgroundService {
     constructor() {
+        //this.apiHost = 'http://localhost:8000'; // Default to local development
         this.apiHost = 'https://app.carveragents.ai'; // Default to production
         this.apiBaseUrl = `${this.apiHost}/api/v1`;
         this.refreshInterval = 15 * 60 * 1000; // 15 minutes

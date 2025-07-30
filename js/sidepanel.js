@@ -4,6 +4,7 @@ class RegulatoryMonitorSidePanel {
         this.apiKey = null;
         this.currentUser = null;
         this.currentScreen = 'loading';
+        //this.apiHost = 'http://localhost:8000'; // Default to local development
         this.apiHost = 'https://app.carveragents.ai'; // Default to production
         this.apiBaseUrl = `${this.apiHost}/api/v1`;
         this.cache = new Map();
@@ -368,11 +369,7 @@ class RegulatoryMonitorSidePanel {
                 <div class="topic-header">
                     <div class="topic-name">
                         <div class="topic-color" style="background-color: ${topic.color}"></div>
-                        <span class="topic-title" title="${this.escapeHtml(topic.tag_name)}">${this.escapeHtml(this.truncateText(topic.tag_name, 3))}</span>
-                    </div>
-                    <div class="topic-meta">
-                        <span>${topic.link_count} ${topic.link_count === 1 ? 'update' : 'updates'} 
-                        ${topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}</span>` : '<span>No recent updates</span>'}
+                        <span class="topic-title" title="${this.escapeHtml(topic.tag_name)}">${this.escapeHtml(this.truncateText(topic.tag_name, 30))}</span>
                     </div>
                     ${isSubscribed ? `
                     <div class="topic-actions">
@@ -385,8 +382,12 @@ class RegulatoryMonitorSidePanel {
                     </div>
                     ` : ''}
                 </div>
+                <div class="topic-meta">
+                      <span>${topic.link_count} ${topic.link_count === 1 ? 'source' : 'sources'} 
+                      ${topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}</span>` : '<span>No recent updates</span>'}
+                </div>
                 <div class="topic-summary">
-                    ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
+${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 </div>
             </div>
             `;
@@ -500,29 +501,27 @@ class RegulatoryMonitorSidePanel {
         });
 
         container.innerHTML = sortedEntries.map(entry => `
-            <div class="link-item" data-entry-id="${entry.entry_id}">
-                <div class="link-header">
-                    <div class="link-title">
-                        <a href="${entry.link}" target="_blank" rel="noopener noreferrer" class="link-title-text" title="${this.escapeHtml(entry.title)}">
-                            ${this.escapeHtml(this.truncateText(entry.title, 5))}
+            <div class="regwatch-tile" data-entry-id="${entry.entry_id}">
+                <div class="regwatch-tile-header">
+                    <div class="regwatch-tile-title">
+                        <a href="${entry.link}" target="_blank" rel="noopener noreferrer" title="${this.escapeHtml(entry.title)}">
+                            ${this.escapeHtml(this.truncateText(entry.title, 20))}
                         </a>
                     </div>
-                    <div class="link-meta">
-                        <span>${this.formatActualDate(entry.published_date)}</span>
-                    </div>
-                    <div class="link-actions">
-                        <button class="link-action-icon" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" title="Share Summary">
+                    <div class="regwatch-tile-actions">
+                        <button class="regwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" title="Share Summary">
                             📤
                         </button>
-                        <button class="link-action-icon disabled" disabled title="Extract Names (Coming Soon)">
+                        <button class="regwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
                             👥
                         </button>
-                        <button class="link-action-icon disabled" disabled title="Extract Timelines (Coming Soon)">
+                        <button class="regwatch-action-btn disabled" disabled title="Extract Timelines (Coming Soon)">
                             📅
                         </button>
                     </div>
                 </div>
-                <div class="link-summary-text">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
+                <div class="regwatch-tile-summary">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
+                ${!this.isEpochDate(entry.published_date) ? `<div class="regwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : ''}
             </div>
         `).join('');
         
@@ -531,7 +530,7 @@ class RegulatoryMonitorSidePanel {
     }
     
     addActionButtonListeners(container) {
-        const actionButtons = container.querySelectorAll('.link-action[data-action], .link-action-icon[data-action]');
+        const actionButtons = container.querySelectorAll('.link-action[data-action], .link-action-icon[data-action], .regwatch-action-btn[data-action], .partnerwatch-action-btn[data-action]');
         actionButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 const action = e.target.getAttribute('data-action');
@@ -552,13 +551,17 @@ class RegulatoryMonitorSidePanel {
         const originalText = actionButton.innerHTML;
         actionButton.innerHTML = `Processing...`;
         
-        // Disable all action buttons in this entry
-        const allButtons = actionButton.closest('.link-item').querySelectorAll('.link-action');
-        allButtons.forEach(btn => {
-            if (btn !== actionButton) {
-                btn.disabled = true;
-            }
-        });
+        // Find all action buttons in this entry
+        const tileContainer = actionButton.closest('.link-item, .regwatch-tile, .partnerwatch-tile');
+        let allButtons = [];
+        if (tileContainer) {
+            allButtons = tileContainer.querySelectorAll('.link-action, .regwatch-action-btn, .partnerwatch-action-btn');
+            allButtons.forEach(btn => {
+                if (btn !== actionButton) {
+                    btn.disabled = true;
+                }
+            });
+        }
         
         try {
             // Handle share_summary action locally
@@ -749,7 +752,7 @@ class RegulatoryMonitorSidePanel {
                     <div class="topic-card partner-card" data-keyword-id="${keyword.keyword_id}" data-kind="${keyword.kind}">
                         <div class="topic-header">
                             <div class="topic-name">
-                                <span class="topic-title" title="${this.escapeHtml(keyword.keyword)}">${this.escapeHtml(this.truncateText(keyword.keyword, 5))}</span>
+                                <span class="topic-title" title="${this.escapeHtml(keyword.keyword)}">${this.escapeHtml(this.truncateText(keyword.keyword, 30))}</span>
                             </div>
                             <div class="topic-meta">
                                 <span>${keyword.sources_count || 0} sources</span>
@@ -1350,8 +1353,21 @@ class RegulatoryMonitorSidePanel {
         }
     }
 
+    isEpochDate(dateString) {
+        try {
+            const date = new Date(dateString);
+            // Check if it's Jan 1, 1970 (epoch) or invalid date
+            return isNaN(date.getTime()) || date.getTime() === 0;
+        } catch (error) {
+            return true;
+        }
+    }
+
     formatActualDate(dateString) {
         try {
+            if (this.isEpochDate(dateString)) {
+                return '';
+            }
             const date = new Date(dateString);
             const day = date.getDate();
             const suffix = this.getOrdinalSuffix(day);
@@ -1359,7 +1375,7 @@ class RegulatoryMonitorSidePanel {
             const year = date.getFullYear();
             return `${month} ${day}${suffix}, ${year}`;
         } catch (error) {
-            return 'Unknown date';
+            return '';
         }
     }
 
@@ -2296,32 +2312,30 @@ class RegulatoryMonitorSidePanel {
         });
 
         container.innerHTML = sortedEntries.map(entry => `
-            <div class="link-item" data-entry-id="${entry.entry_id}">
-                <div class="link-header">
-                    <div class="link-title">
-                        <a href="${entry.link}" target="_blank" rel="noopener noreferrer" class="link-title-text" title="${this.escapeHtml(entry.title)}">
-                            ${this.escapeHtml(this.truncateText(entry.title, 5))}
+            <div class="partnerwatch-tile" data-entry-id="${entry.entry_id}">
+                <div class="partnerwatch-tile-header">
+                    <div class="partnerwatch-tile-title">
+                        <a href="${entry.link}" target="_blank" rel="noopener noreferrer" title="${this.escapeHtml(entry.title)}">
+                            ${this.escapeHtml(this.truncateText(entry.title, 20))}
                         </a>
                     </div>
-                    <div class="link-meta">
-                        <span>${this.formatActualDate(entry.published_date)}</span>
-                    </div>
-                    <div class="link-actions">
-                        <button class="link-action-icon" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
+                    <div class="partnerwatch-tile-actions">
+                        <button class="partnerwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
                             📤
                         </button>
-                        <button class="link-action-icon disabled" disabled title="Extract Names (Coming Soon)">
+                        <button class="partnerwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
                             👥
                         </button>
-                        <button class="link-action-icon disabled" disabled title="Extract Timelines (Coming Soon)">
+                        <button class="partnerwatch-action-btn disabled" disabled title="Extract Timelines (Coming Soon)">
                             📅
                         </button>
                     </div>
                 </div>
-                <div class="entry-sentiment">
+                <div class="partnerwatch-tile-sentiment">
                     <span>Sentiment: ${this.capitalize(entry.sentiment || 'neutral')}</span>
                 </div>
-                <div class="link-summary-text">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
+                <div class="partnerwatch-tile-summary">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
+                ${!this.isEpochDate(entry.published_date) ? `<div class="partnerwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : ''}
             </div>
         `).join('');
         
