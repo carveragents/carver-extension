@@ -509,7 +509,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                         </a>
                     </div>
                     <div class="regwatch-tile-actions">
-                        <button class="regwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" title="Share Summary">
+                        <button class="regwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
                             📤
                         </button>
                         <button class="regwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
@@ -740,8 +740,8 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         
         container.innerHTML = `
             ${keywords.map((keyword, index) => {
-                // Calculate aggregated sentiment from feed entries
-                const aggregatedSentiment = this.calculateSentiment(keyword.feed_entries);
+                // Use summary level sentiment from API response
+                const aggregatedSentiment = keyword.sentiment || 'neutral';
                 const sentimentDot = this.renderSentimentDot(aggregatedSentiment);
                 
                 // Get one-line summary
@@ -754,10 +754,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                             <div class="topic-name">
                                 <span class="topic-title" title="${this.escapeHtml(keyword.keyword)}">${this.escapeHtml(this.truncateText(keyword.keyword, 30))}</span>
                             </div>
-                            <div class="topic-meta">
-                                <span>${keyword.sources_count || 0} sources</span>
-                                ${keyword.last_updated ? `, ${this.formatActualDate(keyword.last_updated)}` : ', No recent updates'}
-                            </div>
                             <div class="partner-actions">
                                 <button class="btn btn-small btn-secondary edit-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" data-keyword-frequency="${keyword.frequency || 'daily'}" title="Edit Partner">
                                     ✎
@@ -766,6 +762,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                                     ✕
                                 </button>
                             </div>
+                        </div>
+                        <div class="topic-meta">
+<span>${keyword.sources_count || 0} sources${keyword.last_updated ? `, Updated ${this.formatActualDate(keyword.last_updated)}` : ', No recent updates'}</span>
                         </div>
                         <div class="partner-sentiment">
                             <span>Sentiment: ${this.capitalize(aggregatedSentiment)}</span>
@@ -2061,7 +2060,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
             if (!query.trim()) {
                 // Show all topics when no query (pre-loaded list)
-                await this.showTopicsSuggestions(this.allTopics.slice(0, 15)); // Show top 15 topics
+                await this.showTopicsSuggestions(this.allTopics.slice(0, 50)); // Show top 50 topics
                 return;
             }
 
@@ -2279,8 +2278,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             if (keywordDetails.feed_entries && keywordDetails.feed_entries.length > 0) {
                 this.renderPartnerScreenFeedEntries(keywordDetails.feed_entries, feedListContainer);
                 
-                // Calculate and show aggregated sentiment
-                const aggregatedSentiment = this.calculateSentiment(keywordDetails.feed_entries);
+                // Use summary level sentiment from stored partner data
+                const partnerData = this.allPartners?.find(p => p.keyword_id === keywordId);
+                const aggregatedSentiment = partnerData?.sentiment || 'neutral';
                 this.showPartnerSentimentIndicator(aggregatedSentiment);
             } else {
                 feedListContainer.innerHTML = '<p class="no-summary">No recent updates available yet.</p>';
@@ -2509,11 +2509,35 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     formatShareSummary(summary) {
         if (!summary) return '';
         
-        // Format bullet points with proper line breaks
-        let formattedSummary = summary.replace(/•\s*/g, '<br/>• ');
+        let formattedSummary = summary;
+        
+        // Check if the summary already has numbered points (1. 2. 3. etc.)
+        const hasNumberedPoints = /^\d+\.\s+/m.test(formattedSummary);
+        
+        if (hasNumberedPoints) {
+            // Format numbered lists - just add line breaks before numbers
+            formattedSummary = formattedSummary.replace(/(\d+\.\s+)/g, '<br/>$1');
+        } else {
+            // Handle other bullet point formats
+            formattedSummary = formattedSummary
+                // Handle bullet points (•, -, *)
+                .replace(/•\s*/g, '<br/>• ')
+                .replace(/^-\s+/gm, '<br/>• ')
+                .replace(/^\*\s+/gm, '<br/>• ')
+                // Handle points that start sentences after periods (only if no bullets exist)
+                .replace(/\.\s+([A-Z][^.]*)/g, '.<br/>• $1')
+                // Handle semicolon-separated points
+                .replace(/;\s+([A-Z])/g, ';<br/>• $1');
+        }
         
         // Remove leading <br/> if it exists
         formattedSummary = formattedSummary.replace(/^<br\/>/, '');
+        
+        // Add line breaks for better readability between sentences if no formatting was applied
+        if (!formattedSummary.includes('<br/>')) {
+            // Split on periods followed by capital letters and add line breaks
+            formattedSummary = formattedSummary.replace(/\.(\s+)([A-Z])/g, '.<br/><br/>$2');
+        }
         
         // Highlight key terms (simple approach - can be enhanced)
         const keywords = ['regulatory', 'compliance', 'bank', 'financial', 'policy', 'requirement', 'guideline', 'framework', 'announcement', 'update'];
@@ -2698,8 +2722,17 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             this.showToast(`Successfully unsubscribed from "${topicName}"!`, 'success');
             this.hideUnsubscribeConfirmModal();
             
-            // Refresh the appropriate page
-            await this.refreshAfterSubscriptionChange(source);
+            // Show loading indicator and refresh the appropriate page
+            if (source === 'search') {
+                this.showSearchRefreshLoading();
+            }
+            try {
+                await this.refreshAfterSubscriptionChange(source);
+            } finally {
+                if (source === 'search') {
+                    this.hideSearchRefreshLoading();
+                }
+            }
             
         } catch (error) {
             console.error('Failed to unsubscribe:', error);
@@ -2726,12 +2759,76 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             
             this.showToast(`Successfully subscribed to "${topicName}"!`, 'success');
             
-            // Refresh the search results
-            await this.refreshAfterSubscriptionChange('search');
+            // Update button state immediately for responsive feel
+            const button = document.querySelector(`[data-topic-id="${topicId}"]`);
+            if (button) {
+                button.textContent = '★';
+                button.style.color = '#10b981';
+                button.setAttribute('title', 'Unsubscribe from topic');
+            }
+            
+            // Show loading indicator and refresh the search results
+            this.showSearchRefreshLoading();
+            try {
+                await this.refreshAfterSubscriptionChange('search');
+            } finally {
+                this.hideSearchRefreshLoading();
+            }
             
         } catch (error) {
             console.error('Failed to subscribe:', error);
             this.showToast('Failed to subscribe. Please try again.', 'error');
+        }
+    }
+
+    showSearchRefreshLoading() {
+        const container = document.getElementById('search-results-list');
+        if (container) {
+            // Add loading overlay to search results
+            const overlay = document.createElement('div');
+            overlay.id = 'search-refresh-loading';
+            overlay.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(255, 255, 255, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                border-radius: 8px;
+            `;
+            overlay.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <div style="width: 24px; height: 24px; border: 2px solid #e5e7eb; border-top: 2px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <span style="font-size: 14px; color: #6b7280;">Refreshing results...</span>
+                </div>
+            `;
+            
+            // Add CSS animation if not already present
+            if (!document.getElementById('search-loading-styles')) {
+                const style = document.createElement('style');
+                style.id = 'search-loading-styles';
+                style.textContent = `
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            container.style.position = 'relative';
+            container.appendChild(overlay);
+        }
+    }
+
+    hideSearchRefreshLoading() {
+        const overlay = document.getElementById('search-refresh-loading');
+        if (overlay) {
+            overlay.remove();
         }
     }
 
