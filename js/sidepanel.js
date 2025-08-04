@@ -410,8 +410,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         container.querySelectorAll('.unsubscribe-tile-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const topicId = e.target.getAttribute('data-topic-id');
-                const topicName = e.target.getAttribute('data-topic-name');
+                const buttonElement = e.currentTarget;
+                const topicId = buttonElement.getAttribute('data-topic-id');
+                const topicName = buttonElement.getAttribute('data-topic-name');
                 this.showUnsubscribeConfirmModal(topicId, topicName, 'tile');
             });
         });
@@ -510,7 +511,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                     </div>
                     <div class="regwatch-tile-actions">
                         <button class="regwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
-                            📤
+                            <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
                         </button>
                         <button class="regwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
                             👥
@@ -533,10 +534,12 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         const actionButtons = container.querySelectorAll('.link-action[data-action], .link-action-icon[data-action], .regwatch-action-btn[data-action], .partnerwatch-action-btn[data-action]');
         actionButtons.forEach(button => {
             button.addEventListener('click', (e) => {
-                const action = e.target.getAttribute('data-action');
-                const entryId = e.target.getAttribute('data-entry-id');
-                const entryUrl = e.target.getAttribute('data-entry-url');
-                this.handleEntryAction(action, entryId, entryUrl, e.target);
+                // Use currentTarget to get the button element, not the clicked child (like img)
+                const buttonElement = e.currentTarget;
+                const action = buttonElement.getAttribute('data-action');
+                const entryId = buttonElement.getAttribute('data-entry-id');
+                const entryUrl = buttonElement.getAttribute('data-entry-url');
+                this.handleEntryAction(action, entryId, entryUrl, buttonElement);
             });
         });
     }
@@ -756,10 +759,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                             </div>
                             <div class="partner-actions">
                                 <button class="btn btn-small btn-secondary edit-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" data-keyword-frequency="${keyword.frequency || 'daily'}" title="Edit Partner">
-                                    ✎
+                                    <img src="icons/carver-icons/pencil_edit_18x18.svg" alt="Edit" width="18" height="18">
                                 </button>
                                 <button class="btn btn-small btn-secondary delete-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" title="Delete Partner">
-                                    ✕
+                                    <img src="icons/carver-icons/trash_delete_18x18.svg" alt="Delete" width="18" height="18">
                                 </button>
                             </div>
                         </div>
@@ -793,9 +796,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         container.querySelectorAll('.edit-partner').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const keywordId = e.target.getAttribute('data-keyword-id');
-                const keywordName = e.target.getAttribute('data-keyword-name');
-                const frequency = e.target.getAttribute('data-keyword-frequency');
+                const buttonElement = e.currentTarget;
+                const keywordId = buttonElement.getAttribute('data-keyword-id');
+                const keywordName = buttonElement.getAttribute('data-keyword-name');
+                const frequency = buttonElement.getAttribute('data-keyword-frequency');
                 this.showEditPartnerModal(keywordId, keywordName, frequency);
             });
         });
@@ -803,8 +807,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         container.querySelectorAll('.delete-partner').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const keywordId = e.target.getAttribute('data-keyword-id');
-                const keywordName = e.target.getAttribute('data-keyword-name');
+                const buttonElement = e.currentTarget;
+                const keywordId = buttonElement.getAttribute('data-keyword-id');
+                const keywordName = buttonElement.getAttribute('data-keyword-name');
                 this.confirmDeletePartner(keywordId, keywordName);
             });
         });
@@ -1467,10 +1472,11 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         const actionButtons = container.querySelectorAll('.action-btn[data-action]');
         actionButtons.forEach(button => {
             button.addEventListener('click', (e) => {
-                const action = e.target.getAttribute('data-action');
-                const summaryId = e.target.getAttribute('data-summary-id');
-                const sourceUrl = e.target.getAttribute('data-source-url');
-                this.handleSummaryAction(action, summaryId, sourceUrl, e.target);
+                const buttonElement = e.currentTarget;
+                const action = buttonElement.getAttribute('data-action');
+                const summaryId = buttonElement.getAttribute('data-summary-id');
+                const sourceUrl = buttonElement.getAttribute('data-source-url');
+                this.handleSummaryAction(action, summaryId, sourceUrl, buttonElement);
             });
         });
     }
@@ -1607,7 +1613,8 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         // Add event listeners
         container.querySelectorAll('.unsubscribe-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const topicId = e.target.getAttribute('data-topic-id');
+                const buttonElement = e.currentTarget;
+                const topicId = buttonElement.getAttribute('data-topic-id');
                 this.unsubscribeFromTopicInList(topicId);
             });
         });
@@ -1761,9 +1768,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 console.log('Subscribe button clicked!');
-                const topicId = e.target.getAttribute('data-topic-id');
-                const topicName = e.target.getAttribute('data-topic-name');
-                const isSubscribed = e.target.textContent.trim() === '★';
+                const buttonElement = e.currentTarget;
+                const topicId = buttonElement.getAttribute('data-topic-id');
+                const topicName = buttonElement.getAttribute('data-topic-name');
+                const isSubscribed = buttonElement.textContent.trim() === '★';
                 
                 console.log('Topic:', topicName, 'isSubscribed:', isSubscribed);
                 
@@ -2150,9 +2158,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         suggestionsContainer.querySelectorAll('.topic-suggestion-subscribe-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                const topicId = e.target.getAttribute('data-topic-id');
-                const topicName = e.target.getAttribute('data-topic-name');
-                const isCurrentlySubscribed = e.target.textContent.trim() === '★';
+                const buttonElement = e.currentTarget;
+                const topicId = buttonElement.getAttribute('data-topic-id');
+                const topicName = buttonElement.getAttribute('data-topic-name');
+                const isCurrentlySubscribed = buttonElement.textContent.trim() === '★';
                 
                 if (isCurrentlySubscribed) {
                     this.showUnsubscribeConfirmModal(topicId, topicName, 'suggestions');
@@ -2321,7 +2330,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                     </div>
                     <div class="partnerwatch-tile-actions">
                         <button class="partnerwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
-                            📤
+                            <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
                         </button>
                         <button class="partnerwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
                             👥
