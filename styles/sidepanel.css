@@ -243,7 +243,7 @@ html, body {
 .header-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 1px;
     flex-shrink: 0;
 }
 
@@ -736,10 +736,9 @@ select:focus {
 }
 
 .topic-title {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 30ch;
+    line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .topic-meta {
@@ -2222,8 +2221,6 @@ select:focus {
     color: #6b7280;
     font-style: italic;
     text-align: left;
-    padding-top: 8px;
-    border-top: 1px solid #e5e7eb;
 }
 
 /* PartnerWatch Details Tiles - Fresh CSS */
@@ -2326,8 +2323,6 @@ select:focus {
     color: #6b7280;
     font-style: italic;
     text-align: left;
-    padding-top: 8px;
-    border-top: 1px solid #e5e7eb;
 }
 
 /* Additional responsive and accessibility improvements */
@@ -2874,6 +2869,100 @@ select:focus-visible {
     font-size: 16px;
     color: #1a1a1a;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+/* Header button overrides */
+#support-btn, #settings-btn {
+    background: none !important;
+    border: none !important;
+    padding: 8px !important;
+}
+
+#support-btn:hover, #settings-btn:hover {
+    background: rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+}
+
+/* Topics header button overrides */
+#subscriptions-btn, #refresh-btn {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+#subscriptions-btn:hover, #refresh-btn:hover {
+    background: rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* Tile footer layouts */
+.regwatch-tile-footer, .partnerwatch-tile-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.regwatch-tile-footer .regwatch-tile-date,
+.partnerwatch-tile-footer .partnerwatch-tile-date {
+    flex: 1;
+    font-size: 10px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.regwatch-tile-footer .regwatch-tile-actions,
+.partnerwatch-tile-footer .partnerwatch-tile-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+/* Home screen tile footer layouts */
+.topic-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.topic-footer .topic-meta {
+    flex: 1;
+    font-size: 11px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.topic-footer .topic-actions,
+.topic-footer .partner-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+/* Share modal source link styling */
+.share-field #share-url {
+    color: #1f2937;
+    text-decoration: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.6;
+    font-size: 13px;
+    display: block;
+    margin: 0;
+    padding: 8px 0;
+    box-sizing: border-box;
+}
+
+.share-field #share-url:hover {
+    color: #374151;
+    text-decoration: underline;
 }
 
 /* Reduced motion support */

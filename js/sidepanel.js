@@ -5,7 +5,7 @@ class RegulatoryMonitorSidePanel {
         this.currentUser = null;
         this.currentScreen = 'loading';
         //this.apiHost = 'http://localhost:8000'; // Default to local development
-        this.apiHost = 'https://app.carveragents.ai'; // Default to production
+        this.apiHost = 'https://staging.carveragents.ai'; // Default to production
         this.apiBaseUrl = `${this.apiHost}/api/v1`;
         this.cache = new Map();
         this.retryCount = 0;
@@ -352,13 +352,22 @@ class RegulatoryMonitorSidePanel {
 
         emptyState.classList.add('hidden');
         
-        // Sort topics: subscribed first (green color), then by name
+        // Sort topics: subscribed first (green color), then by last updated date (latest first)
         const sortedSummaries = [...summaries].sort((a, b) => {
             const aSubscribed = a.color === '#10b981';
             const bSubscribed = b.color === '#10b981';
             
+            // Subscribed topics first
             if (aSubscribed && !bSubscribed) return -1;
             if (!aSubscribed && bSubscribed) return 1;
+            
+            // Within each group, sort by last updated date (latest first)
+            const aDate = a.last_updated ? new Date(a.last_updated).getTime() : 0;
+            const bDate = b.last_updated ? new Date(b.last_updated).getTime() : 0;
+            
+            if (aDate !== bDate) return bDate - aDate; // Latest first
+            
+            // If dates are equal, sort by name
             return a.tag_name.localeCompare(b.tag_name);
         });
         
@@ -366,10 +375,17 @@ class RegulatoryMonitorSidePanel {
             const isSubscribed = topic.color === '#10b981';
             return `
             <div class="topic-card" data-topic-id="${topic.tag_id}">
-                <div class="topic-header">
-                    <div class="topic-name">
-                        <div class="topic-color" style="background-color: ${topic.color}"></div>
-                        <span class="topic-title" title="${this.escapeHtml(topic.tag_name)}">${this.escapeHtml(this.truncateText(topic.tag_name, 30))}</span>
+                <div class="topic-name">
+                    <div class="topic-color" style="background-color: ${topic.color}"></div>
+                    <span class="topic-title" title="${this.escapeHtml(topic.tag_name)}">${this.escapeHtml(topic.tag_name)}</span>
+                </div>
+                <div class="topic-summary">
+${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
+                </div>
+                <div class="topic-footer">
+                    <div class="topic-meta">
+                        <span>${topic.link_count} ${topic.link_count === 1 ? 'source' : 'sources'} 
+                        ${topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}</span>` : '<span>No recent updates</span>'}
                     </div>
                     ${isSubscribed ? `
                     <div class="topic-actions">
@@ -380,14 +396,7 @@ class RegulatoryMonitorSidePanel {
                             ×
                         </button>
                     </div>
-                    ` : ''}
-                </div>
-                <div class="topic-meta">
-                      <span>${topic.link_count} ${topic.link_count === 1 ? 'source' : 'sources'} 
-                      ${topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}</span>` : '<span>No recent updates</span>'}
-                </div>
-                <div class="topic-summary">
-${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
+                    ` : '<div class="topic-actions"></div>'}
                 </div>
             </div>
             `;
@@ -503,12 +512,14 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
         container.innerHTML = sortedEntries.map(entry => `
             <div class="regwatch-tile" data-entry-id="${entry.entry_id}">
-                <div class="regwatch-tile-header">
-                    <div class="regwatch-tile-title">
-                        <a href="${entry.link}" target="_blank" rel="noopener noreferrer" title="${this.escapeHtml(entry.title)}">
-                            ${this.escapeHtml(this.truncateText(entry.title, 20))}
-                        </a>
-                    </div>
+                <div class="regwatch-tile-title">
+                    <a href="${entry.link}" target="_blank" rel="noopener noreferrer" title="${this.escapeHtml(entry.title)}">
+                        ${this.escapeHtml(entry.title)}
+                    </a>
+                </div>
+                <div class="regwatch-tile-summary">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
+                <div class="regwatch-tile-footer">
+                    ${!this.isEpochDate(entry.published_date) ? `<div class="regwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : '<div class="regwatch-tile-date"></div>'}
                     <div class="regwatch-tile-actions">
                         <button class="regwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
                             <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
@@ -521,8 +532,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                         </button>
                     </div>
                 </div>
-                <div class="regwatch-tile-summary">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
-                ${!this.isEpochDate(entry.published_date) ? `<div class="regwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : ''}
             </div>
         `).join('');
         
@@ -741,8 +750,19 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             return;
         }
         
+        // Sort keywords by last updated date (latest first)
+        const sortedKeywords = [...keywords].sort((a, b) => {
+            const aDate = a.last_updated ? new Date(a.last_updated).getTime() : 0;
+            const bDate = b.last_updated ? new Date(b.last_updated).getTime() : 0;
+            
+            if (aDate !== bDate) return bDate - aDate; // Latest first
+            
+            // If dates are equal, sort by keyword name
+            return a.keyword.localeCompare(b.keyword);
+        });
+        
         container.innerHTML = `
-            ${keywords.map((keyword, index) => {
+            ${sortedKeywords.map((keyword, index) => {
                 // Use summary level sentiment from API response
                 const aggregatedSentiment = keyword.sentiment || 'neutral';
                 const sentimentDot = this.renderSentimentDot(aggregatedSentiment);
@@ -753,9 +773,18 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 
                 return `
                     <div class="topic-card partner-card" data-keyword-id="${keyword.keyword_id}" data-kind="${keyword.kind}">
-                        <div class="topic-header">
-                            <div class="topic-name">
-                                <span class="topic-title" title="${this.escapeHtml(keyword.keyword)}">${this.escapeHtml(this.truncateText(keyword.keyword, 30))}</span>
+                        <div class="topic-name">
+                            <span class="topic-title" title="${this.escapeHtml(keyword.keyword)}">${this.escapeHtml(keyword.keyword)}</span>
+                        </div>
+                        <div class="partner-sentiment">
+                            <span>Sentiment: ${this.capitalize(aggregatedSentiment)}</span>
+                        </div>
+                        <div class="topic-summary">
+                            ${this.escapeHtml(truncatedSummary)}
+                        </div>
+                        <div class="topic-footer">
+                            <div class="topic-meta">
+<span>${keyword.sources_count || 0} sources${keyword.last_updated ? `, Updated ${this.formatActualDate(keyword.last_updated)}` : ', No recent updates'}</span>
                             </div>
                             <div class="partner-actions">
                                 <button class="btn btn-small btn-secondary edit-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" data-keyword-frequency="${keyword.frequency || 'daily'}" title="Edit Partner">
@@ -765,15 +794,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                                     <img src="icons/carver-icons/trash_delete_18x18.svg" alt="Delete" width="18" height="18">
                                 </button>
                             </div>
-                        </div>
-                        <div class="topic-meta">
-<span>${keyword.sources_count || 0} sources${keyword.last_updated ? `, Updated ${this.formatActualDate(keyword.last_updated)}` : ', No recent updates'}</span>
-                        </div>
-                        <div class="partner-sentiment">
-                            <span>Sentiment: ${this.capitalize(aggregatedSentiment)}</span>
-                        </div>
-                        <div class="topic-summary">
-                            ${this.escapeHtml(truncatedSummary)}
                         </div>
                     </div>
                 `;
@@ -2322,12 +2342,17 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
         container.innerHTML = sortedEntries.map(entry => `
             <div class="partnerwatch-tile" data-entry-id="${entry.entry_id}">
-                <div class="partnerwatch-tile-header">
-                    <div class="partnerwatch-tile-title">
-                        <a href="${entry.link}" target="_blank" rel="noopener noreferrer" title="${this.escapeHtml(entry.title)}">
-                            ${this.escapeHtml(this.truncateText(entry.title, 20))}
-                        </a>
-                    </div>
+                <div class="partnerwatch-tile-title">
+                    <a href="${entry.link}" target="_blank" rel="noopener noreferrer" title="${this.escapeHtml(entry.title)}">
+                        ${this.escapeHtml(entry.title)}
+                    </a>
+                </div>
+                <div class="partnerwatch-tile-sentiment">
+                    <span>Sentiment: ${this.capitalize(entry.sentiment || 'neutral')}</span>
+                </div>
+                <div class="partnerwatch-tile-summary">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
+                <div class="partnerwatch-tile-footer">
+                    ${!this.isEpochDate(entry.published_date) ? `<div class="partnerwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : '<div class="partnerwatch-tile-date"></div>'}
                     <div class="partnerwatch-tile-actions">
                         <button class="partnerwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
                             <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
@@ -2340,11 +2365,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                         </button>
                     </div>
                 </div>
-                <div class="partnerwatch-tile-sentiment">
-                    <span>Sentiment: ${this.capitalize(entry.sentiment || 'neutral')}</span>
-                </div>
-                <div class="partnerwatch-tile-summary">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
-                ${!this.isEpochDate(entry.published_date) ? `<div class="partnerwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : ''}
             </div>
         `).join('');
         
@@ -2561,7 +2581,11 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     showShareSummaryModal(title, url, summary) {
         // Populate modal content
         document.getElementById('share-title').textContent = title;
-        document.getElementById('share-url').textContent = url;
+        
+        // Set the URL as both the href and text content of the link
+        const urlElement = document.getElementById('share-url');
+        urlElement.href = url;
+        urlElement.textContent = url;
         
         // Format and display summary with HTML
         const summaryElement = document.getElementById('share-summary');
@@ -2773,7 +2797,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             if (button) {
                 button.textContent = '★';
                 button.style.color = '#10b981';
-                button.setAttribute('title', 'Unsubscribe from topic');
+                button.setAttribute('title', 'Unsubscribe');
             }
             
             // Show loading indicator and refresh the search results
