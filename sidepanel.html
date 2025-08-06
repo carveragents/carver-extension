@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carver</title>
+    <title>Carver Agents</title>
     <link rel="stylesheet" href="styles/sidepanel.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
         <!-- Loading State -->
         <div id="loading" class="screen">
             <div class="header">
-                <h1>Carver</h1>
+                <h1>Carver Agents</h1>
             </div>
             <div class="loading-spinner">
                 <div class="spinner"></div>
@@ -23,8 +23,8 @@
         <div id="api-key-setup" class="screen hidden">
             <div class="login-container">
                 <div class="login-header">
-                    <img src="icons/icon32.png" alt="Carver" class="login-logo">
-                    <h1 class="login-brand">Carver Watch</h1>
+                    <img src="icons/icon32.png" alt="Carver Agents" class="login-logo">
+                    <h1 class="login-brand">Carver Agents</h1>
                     <p class="login-subtitle">Real-time Contextual Intelligence<br />Anytime, Anywhere</p>
                 </div>
                 
@@ -68,7 +68,7 @@
                         <a href="https://carveragents.ai" target="_blank" rel="noopener noreferrer">Visit our website</a>
                     </p>
                     <p class="version-text">
-                        © Carver Beta-<span id="api-version"></span>
+                        © Carver Agents Beta-<span id="api-version"></span>
                     </p>
                 </div>
             </div>
@@ -78,16 +78,16 @@
         <div id="main-dashboard" class="screen hidden">
             <div class="header">
                 <div class="header-brand">
-                    <img src="icons/icon32.png" alt="Carver" class="header-logo">
+                    <img src="icons/icon32.png" alt="Carver Agents" class="header-logo">
                     <div class="brand-info">
-                        <h1 class="brand-title">Carver</h1>
+                        <h1 class="brand-title">Carver Agents</h1>
                     </div>
                 </div>
 
-                    <button id="support-btn"  title="Support-1">
+                    <button id="support-btn"  title="Support">
                         <img src="icons/carver-icons/interrogation_help_20x20_white.svg" alt="Help" width="22" height="22">
                     </button>
-                    <button id="settings-btn" title="Settings-1">
+                    <button id="settings-btn" title="Settings">
                         <img src="icons/carver-icons/setting-icon_20x20_white.svg" alt="Settings" width="22" height="22">
                     </button>
 
@@ -105,14 +105,14 @@
                     <!-- Topics Header with Search -->
                     <div class="topics-header">
                         <div class="search-box">
-                            <input type="text" id="topics-search-input" placeholder="Search for regulatory feeds...">
+                            <input type="text" id="topics-search-input" placeholder="Search for regulatory institutes">
                             <div id="topics-suggestions" class="topics-suggestions hidden">
                                 <!-- Topic suggestions will be dynamically inserted here -->
                             </div>
                         </div>
                         <div class="topics-actions">
                             <button id="subscriptions-btn" class="icon-btn" title="My Subscriptions">★</button>
-                            <button id="refresh-btn" class="icon-btn" title="Refresh Topics"><img src="icons/carver-icons/refresh_14x14.svg" alt="Refresh" width="14" height="14"></button>
+                            <button id="refresh-btn" class="icon-btn" title="Refresh"><img src="icons/carver-icons/refresh_14x14.svg" alt="Refresh" width="14" height="14"></button>
                         </div>
                     </div>
 
@@ -124,9 +124,9 @@
                     <!-- Empty State -->
                     <div id="empty-state" class="empty-state hidden">
                         <div class="empty-icon">📊</div>
-                        <h3>Start Monitoring Topics</h3>
-                        <p>Search for regulatory topics to monitor</p>
-                        <button id="search-topics-btn" class="btn btn-primary">Search Topics</button>
+                        <h3>Start Monitoring institutes</h3>
+                        <p>Search for regulatory institutes to monitor</p>
+                        <button id="search-topics-btn" class="btn btn-primary">Search Insitutes</button>
                     </div>
                     
                     <!-- Version Info for Regulatory Tab -->
@@ -140,14 +140,14 @@
                     <!-- Partner Header with Search -->
                     <div class="partner-header">
                         <div class="search-box">
-                            <input type="text" id="partner-search-input" placeholder="Search for partners...">
+                            <input type="text" id="partner-search-input" placeholder="Search for partners">
                             <div id="partner-suggestions" class="partner-suggestions hidden">
                                 <!-- Partner suggestions will be dynamically inserted here -->
                             </div>
                         </div>
                         <div class="partner-header-actions">
-                            <button id="horizon-refresh-btn" class="icon-btn" title="Refresh Partners"><img src="icons/carver-icons/refresh_20x20.svg" alt="Refresh" width="20" height="20"></button>
                             <button id="add-partner-btn" class="icon-btn" title="Add Partner">+</button>
+                            <button id="horizon-refresh-btn" class="icon-btn" title="Refresh Partners"><img src="icons/carver-icons/refresh_14x14.svg" alt="Refresh" width="14" height="14"></button>
                         </div>
                     </div>
 
@@ -184,7 +184,7 @@
                 <div class="section-header">
                     <h3>Summary</h3>
                     <button id="share-topic-summary" class="btn btn-small btn-secondary share-summary-btn" title="Share Summary">
-                        <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18"> Share
+                        <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
                     </button>
                 </div>
                 
@@ -216,7 +216,7 @@
                 <div class="section-header">
                     <h3>Summary</h3>
                     <button id="share-partner-summary" class="btn btn-small btn-secondary share-summary-btn" title="Share Summary">
-                        <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18"> Share
+                        <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
                     </button>
                 </div>
                 
@@ -369,7 +369,7 @@
                 </div>
                 <div class="modal-body">
                     <p>Are you sure you want to unsubscribe from <strong id="unsubscribe-topic-name"></strong>?</p>
-                    <p>You will no longer receive updates for this topic.</p>
+                    <p>You will no longer receive updates for this institute.</p>
                 </div>
                 <div class="modal-footer">
                     <button id="cancel-unsubscribe-btn" class="btn btn-secondary">Cancel</button>
@@ -390,7 +390,7 @@
                 </div>
                 <div class="modal-body">
                     <p>Are you sure you want to delete <strong id="delete-partner-name"></strong>?</p>
-                    <p>This action cannot be undone and will remove all associated data.</p>
+                    <p>This action can't be undone and will remove all associated data.</p>
                 </div>
                 <div class="modal-footer">
                     <button id="cancel-delete-partner-btn" class="btn btn-secondary">Cancel</button>
@@ -441,12 +441,12 @@
                         </div>
 
                         <div class="share-field">
-                            <strong>Summary:</strong>
+                            <strong>Summary</strong>
                             <p id="share-summary"></p>
                         </div>
 
                         <div class="share-field">
-                            <strong>Source:</strong>
+                            <strong>Source</strong>
                             <a id="share-url" href="#" target="_blank" rel="noopener noreferrer"></a>
                         </div>
                         
@@ -466,20 +466,25 @@
         <div id="overall-topic-summary-modal" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Share Topic Summary</h3>
+                    <h3>Update</h3>
                     <button id="close-overall-topic-summary-modal" class="modal-close"><img src="icons/carver-icons/close_20x20.svg" alt="Close" width="20" height="20"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="overall-summary-content">
-                        <div class="summary-title-section">
-                            <h4 id="overall-topic-summary-title"></h4>
+                    <div class="share-content">
+                        <div class="share-field">
+                            <p id="overall-topic-summary-title"></p>
                         </div>
-                        <div class="summary-text-section">
+
+                        <div class="share-field">
+                            <strong>Summary</strong>
                             <p id="overall-topic-summary-text"></p>
                         </div>
-                        <div class="summary-footer">
-                            <p>Generated on: <a href="https://carveragents.ai" target="_blank">https://carveragents.ai</a></p>
+
+                        <div class="share-field">
+                            <strong>Source</strong>
+                            <a href="https://carveragents.ai" target="_blank" rel="noopener noreferrer">https://carveragents.ai</a>
                         </div>
+                        
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -496,20 +501,25 @@
         <div id="overall-partner-summary-modal" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Share Partner Summary</h3>
+                    <h3>Update</h3>
                     <button id="close-overall-partner-summary-modal" class="modal-close"><img src="icons/carver-icons/close_20x20.svg" alt="Close" width="20" height="20"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="overall-summary-content">
-                        <div class="summary-title-section">
-                            <h4 id="overall-partner-summary-title"></h4>
+                    <div class="share-content">
+                        <div class="share-field">
+                            <p id="overall-partner-summary-title"></p>
                         </div>
-                        <div class="summary-text-section">
+
+                        <div class="share-field">
+                            <strong>Summary</strong>
                             <p id="overall-partner-summary-text"></p>
                         </div>
-                        <div class="summary-footer">
-                            <p>Generated on: <a href="https://carveragents.ai" target="_blank">https://carveragents.ai</a></p>
+
+                        <div class="share-field">
+                            <strong>Source</strong>
+                            <a href="https://carveragents.ai" target="_blank" rel="noopener noreferrer">https://carveragents.ai</a>
                         </div>
+                        
                     </div>
                 </div>
                 <div class="modal-footer">

@@ -9,7 +9,7 @@ class RegulatoryMonitorFloatingButton {
     }
 
     init() {
-        console.log('Carver agnet content script initializing...');
+        console.log('Carver agents content script initializing...');
         
         // Only inject on main pages (not iframes)
         if (window.self !== window.top) {
@@ -51,15 +51,15 @@ class RegulatoryMonitorFloatingButton {
         this.button = document.createElement('div');
         this.button.id = 'regulatory-monitor-floating-btn';
         this.button.className = 'rm-floating-button';
-        this.button.setAttribute('aria-label', 'Open Carver Agent');
-        this.button.title = 'Carver Agent';
+        this.button.setAttribute('aria-label', 'Open Carver Agents');
+        this.button.title = 'Carver Agents';
         
         // Add the button content with Carver icon
         this.button.innerHTML = `
             <div class="rm-btn-icon">
-                <img src="${chrome.runtime.getURL('icons/icon32.png')}" alt="Carver" style="width: 24px; height: 24px; border-radius: 4px;">
+                <img src="${chrome.runtime.getURL('icons/icon32.png')}" alt="Carver Agents" style="width: 24px; height: 24px; border-radius: 4px;">
             </div>
-            <div class="rm-btn-tooltip">Carver Agent</div>
+            <div class="rm-btn-tooltip">Carver Agents</div>
         `;
 
         // Apply inline styles directly (more reliable than CSS classes)

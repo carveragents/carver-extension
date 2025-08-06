@@ -3,7 +3,7 @@
 
 const VERSION_INFO = {
     version: '1.0.0',
-    name: 'Carver',
+    name: 'Carver Agents',
     buildDate: '2025-07-24'
 };
 

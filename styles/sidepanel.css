@@ -91,7 +91,7 @@ html, body {
 }
 
 .modal-body {
-    padding: 24px;
+    padding: 20px;
     max-height: 60vh;
     overflow-y: auto;
 }
@@ -509,7 +509,7 @@ select:focus {
 .tag-summaries {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
 }
 
 .tag-card {
@@ -651,13 +651,11 @@ select:focus {
 
 /* Share Summary Button Styling */
 .share-summary-btn {
-    position: absolute;
-    bottom: 4px;
-    right: 10px;
+    position: static;
     font-size: 11px;
-    padding: 6px 12px;
-    background: #f9fafb;
-    border: 1px solid #6b7280;
+    padding: 4px;
+    background: none;
+    border: none;
     color: #374151;
     border-radius: 4px;
     cursor: pointer;
@@ -665,10 +663,8 @@ select:focus {
 }
 
 .share-summary-btn:hover {
-    background: #f3f4f6;
-    border-color: #4b5563;
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    opacity: 0.7;
 }
 
 
@@ -988,8 +984,8 @@ select:focus {
 }
 
 .partner-header-actions .icon-btn {
-    background: #ffffff;
-    border: 1px solid #6b7280;
+    background: none;
+    border: none;
     color: #1f2937;
     width: 32px;
     height: 32px;
@@ -1001,14 +997,10 @@ select:focus {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .partner-header-actions .icon-btn:hover {
     background: #f9fafb;
-    border-color: #4b5563;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
 }
 
 .partner-search {
@@ -1063,6 +1055,9 @@ select:focus {
 
 .partners-list {
     margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .partner-item {
@@ -1410,15 +1405,30 @@ select:focus {
 
 /* Partner Details Page Title */
 #partner-details .header h1 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
+    align-items: flex-start;
+    flex: 1;
 }
 
 /* Topic Details Page Title */
 #tag-details .header h1 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
-    margin-left: auto;
+    align-items: flex-start;
+    flex: 1;
+}
+
+/* Ensure all header titles are left-aligned */
+.header h1 {
+    text-align: left;
+    margin-left: 0 !important;
+}
+
+/* Specific rule for subscriptions screen header */
+#subscriptions-screen .header h1 {
+    text-align: left;
+    margin-left: 0 !important;
 }
 
 /* Meta Summary */
@@ -1631,36 +1641,86 @@ select:focus {
 
 /* Share Summary Modal Specific Styling */
 .share-content {
-    padding: 8px 0;
+    padding: 10px 0;
 }
 
 .share-field {
-    margin-bottom: 16px;
+    margin-bottom: 24px;
 }
 
-.share-field label {
+.share-field strong {
     font-weight: 600;
     color: #374151;
     font-size: 13px;
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
 .share-field p {
-    margin: 0;
-    padding: 8px 0;
-    line-height: 1.6;
+    margin: 8px 0 0 0;
+    padding: 0;
+    line-height: 1.5;
     color: #1f2937;
+    font-size: 13px;
 }
 
 #share-title {
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
     color: #1a1a1a;
+    line-height: 1.5;
+}
+
+/* Overall summary modal title styling */
+#overall-topic-summary-title,
+#overall-partner-summary-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: #1a1a1a;
+    line-height: 1.4;
+    margin: 0;
+}
+
+/* Overall summary modal text styling */
+#overall-topic-summary-text,
+#overall-partner-summary-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #1f2937;
+    margin: 8px 0 0 0;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Overall summary modal source link styling */
+#overall-topic-summary-modal .share-field a,
+#overall-partner-summary-modal .share-field a {
+    color: #1f2937;
+    text-decoration: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.5;
+    font-size: 13px;
+    display: block;
+    margin: 8px 0 0 0;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+#overall-topic-summary-modal .share-field a:hover,
+#overall-partner-summary-modal .share-field a:hover {
+    color: #374151;
+    text-decoration: underline;
 }
 
 #share-url {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 12px;
     color: #3b82f6;
     word-break: break-all;
@@ -1668,6 +1728,8 @@ select:focus {
     padding: 8px 12px;
     border-radius: 6px;
     border: 1px solid #e5e7eb;
+    margin-left: 4px;
+    margin-right: 4px;
 }
 
 #share-summary {
@@ -1679,6 +1741,11 @@ select:focus {
     background: #f9fafb;
     border-radius: 8px;
     border: 1px solid #e5e7eb;
+    text-align: left;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: none;
+    white-space: normal;
 }
 
 #share-summary strong {
@@ -1701,16 +1768,16 @@ select:focus {
     top: 20px;
     right: 20px;
     z-index: 1000;
-    max-width: 320px;
+    max-width: 260px;
 }
 
 .toast {
     background: #1a1a1a;
     color: white;
-    padding: 16px 20px;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 12px;
     font-weight: 500;
     animation: slideIn 0.3s ease;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
@@ -2403,10 +2470,6 @@ select:focus-visible {
     gap: 8px;
 }
 
-.subscription-name::before {
-    content: "📌";
-    font-size: 12px;
-}
 
 .subscription-type {
     font-size: 11px;
@@ -2952,12 +3015,16 @@ select:focus-visible {
     text-decoration: none;
     word-wrap: break-word;
     overflow-wrap: break-word;
-    line-height: 1.6;
+    line-height: 1.5;
     font-size: 13px;
     display: block;
-    margin: 0;
-    padding: 8px 0;
+    margin: 8px 0 0 0;
+    padding: 8px 12px;
     box-sizing: border-box;
+    text-align: justify;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
 }
 
 .share-field #share-url:hover {

@@ -385,7 +385,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 <div class="topic-footer">
                     <div class="topic-meta">
                         <span>${topic.link_count} ${topic.link_count === 1 ? 'source' : 'sources'} 
-                        ${topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}</span>` : '<span>No recent updates</span>'}
+                        ${topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}</span>` : '<span></span>'}
                     </div>
                     ${isSubscribed ? `
                     <div class="topic-actions">
@@ -784,7 +784,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                         </div>
                         <div class="topic-footer">
                             <div class="topic-meta">
-<span>${keyword.sources_count || 0} sources${keyword.last_updated ? `, Updated ${this.formatActualDate(keyword.last_updated)}` : ', No recent updates'}</span>
+<span>${keyword.sources_count || 0} sources${keyword.last_updated ? `, Updated ${this.formatActualDate(keyword.last_updated)}` : ''}</span>
                             </div>
                             <div class="partner-actions">
                                 <button class="btn btn-small btn-secondary edit-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" data-keyword-frequency="${keyword.frequency || 'daily'}" title="Edit Partner">
@@ -942,7 +942,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 method: 'DELETE'
             });
             
-            this.showToast('Successfully unsubscribed from topic!', 'success');
+            this.showToast('Successfully unsubscribed from institute!', 'success');
             
             // Refresh regulatory data to show updated subscription status
             this.cache.clear();
@@ -1362,18 +1362,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
     formatDate(dateString) {
         try {
-            const date = new Date(dateString);
-            const now = new Date();
-            const diffTime = Math.abs(now - date);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            if (diffDays === 1) return 'Today';
-            if (diffDays === 2) return 'Yesterday';
-            if (diffDays <= 7) return `${diffDays - 1} days ago`;
-            
-            return date.toLocaleDateString();
+            return this.formatDateStandard(dateString);
         } catch (error) {
-            return 'Unknown date';
+            return '';
         }
     }
 
@@ -1392,33 +1383,34 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             if (this.isEpochDate(dateString)) {
                 return '';
             }
-            const date = new Date(dateString);
-            const day = date.getDate();
-            const suffix = this.getOrdinalSuffix(day);
-            const month = date.toLocaleDateString('en-US', { month: 'short' });
-            const year = date.getFullYear();
-            return `${month} ${day}${suffix}, ${year}`;
+            return this.formatDateStandard(dateString);
         } catch (error) {
             return '';
         }
     }
 
-    getOrdinalSuffix(day) {
-        if (day > 3 && day < 21) return 'th';
-        switch (day % 10) {
-            case 1: return 'st';
-            case 2: return 'nd';
-            case 3: return 'rd';
-            default: return 'th';
+    formatDateStandard(dateString) {
+        try {
+            if (this.isEpochDate(dateString)) {
+                return '';
+            }
+            const date = new Date(dateString);
+            const day = date.getDate();
+            const month = date.toLocaleDateString('en-US', { month: 'short' });
+            const year = date.getFullYear();
+            return `${day}${month}${year}`;
+        } catch (error) {
+            return '';
         }
     }
 
+    // Removed getOrdinalSuffix - no longer needed with new date format
+
     formatDateTime(dateString) {
         try {
-            const date = new Date(dateString);
-            return date.toLocaleString();
+            return this.formatDateStandard(dateString);
         } catch (error) {
-            return 'Unknown date';
+            return '';
         }
     }
 
@@ -1653,7 +1645,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 method: 'DELETE'
             });
             
-            this.showToast('Successfully unsubscribed from topic!', 'success');
+            this.showToast('Successfully unsubscribed from institute!', 'success');
             
             // Refresh the subscriptions list
             await this.showSubscriptions();
@@ -2238,14 +2230,19 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             
             this.showToast(`Successfully subscribed to "${topicName}"!`, 'success');
             
-            // Refresh the suggestions to show updated subscription status
-            const searchInput = document.getElementById('topics-search-input');
-            const currentValue = searchInput ? searchInput.value.trim() : '';
-            await this.handleTopicsSearch(currentValue);
+            // Hide suggestions dropdown
+            this.hideTopicsSuggestions();
             
-            // Refresh main regulatory data to show updated subscription status
-            this.cache.clear();
-            await this.loadRegulatoryData();
+            // Show loading indicator on main dashboard
+            this.showMainDashboardLoading();
+            
+            try {
+                // Refresh main regulatory data to show updated subscription status
+                this.cache.clear();
+                await this.loadRegulatoryData();
+            } finally {
+                this.hideMainDashboardLoading();
+            }
             
         } catch (error) {
             console.error('Failed to subscribe to topic:', error);
@@ -2538,7 +2535,31 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     formatShareSummary(summary) {
         if (!summary) return '';
         
+        // DEBUG: Log the original summary with character codes
+        console.log('=== DEBUG formatShareSummary ===');
+        console.log('Original summary:', summary);
+        console.log('Original summary length:', summary.length);
+        console.log('Original summary char codes:', summary.split('').map((char, i) => `${i}: "${char}" (${char.charCodeAt(0)})`));
+        
         let formattedSummary = summary;
+        
+        // Clean up unwanted line breaks and whitespace first
+        // Replace all types of line breaks (including \r\n, \r, \n) that are not part of proper formatting
+        formattedSummary = formattedSummary
+            // First, normalize all line endings to \n
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n')
+            // Remove single newlines that are not followed by numbered points or bullets
+            .replace(/\n(?!\s*\d+\.\s|^\s*[•\-\*]\s)/g, ' ')
+            // Clean up multiple whitespace characters
+            .replace(/\s+/g, ' ')
+            // Trim the result
+            .trim();
+            
+        // DEBUG: Log the processed summary
+        console.log('Processed summary:', formattedSummary);
+        console.log('Processed summary length:', formattedSummary.length);
+        console.log('Processed summary char codes:', formattedSummary.split('').map((char, i) => `${i}: "${char}" (${char.charCodeAt(0)})`));
         
         // Check if the summary already has numbered points (1. 2. 3. etc.)
         const hasNumberedPoints = /^\d+\.\s+/m.test(formattedSummary);
@@ -2568,12 +2589,17 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             formattedSummary = formattedSummary.replace(/\.(\s+)([A-Z])/g, '.<br/><br/>$2');
         }
         
-        // Highlight key terms (simple approach - can be enhanced)
-        const keywords = ['regulatory', 'compliance', 'bank', 'financial', 'policy', 'requirement', 'guideline', 'framework', 'announcement', 'update'];
-        keywords.forEach(keyword => {
-            const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
-            formattedSummary = formattedSummary.replace(regex, '<strong>$1</strong>');
-        });
+        // Keyword highlighting disabled to avoid rendering issues
+        // const keywords = ['regulatory', 'compliance', 'bank', 'financial', 'policy', 'requirement', 'guideline', 'framework', 'announcement', 'update'];
+        // keywords.forEach(keyword => {
+        //     const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
+        //     formattedSummary = formattedSummary.replace(regex, '<strong>$1</strong>');
+        // });
+        
+        // DEBUG: Log the final formatted result
+        console.log('Final formatted summary:', formattedSummary);
+        console.log('Final formatted summary HTML:', formattedSummary.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+        console.log('=== END DEBUG ===');
         
         return formattedSummary;
     }
@@ -2640,7 +2666,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         
         // Populate modal content
         document.getElementById('overall-topic-summary-title').textContent = title;
-        document.getElementById('overall-topic-summary-text').textContent = summary;
+        document.getElementById('overall-topic-summary-text').innerHTML = this.formatShareSummary(summary);
         
         // Show modal
         const modal = document.getElementById('overall-topic-summary-modal');
@@ -2654,13 +2680,14 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
     async copyTopicSummary() {
         const title = document.getElementById('overall-topic-summary-title').textContent;
-        const summary = document.getElementById('overall-topic-summary-text').textContent;
+        const summaryElement = document.getElementById('overall-topic-summary-text');
+        const summary = summaryElement.textContent || summaryElement.innerText;
         
         const textToCopy = `${title}\n\n${summary}\n\nGenerated on: https://carveragents.ai`;
         
         try {
             await navigator.clipboard.writeText(textToCopy);
-            this.showToast('Topic summary copied to clipboard!', 'success');
+            this.showToast('Institute summary copied to clipboard!', 'success');
             this.hideTopicSummaryModal();
         } catch (error) {
             console.error('Failed to copy to clipboard:', error);
@@ -2683,7 +2710,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         
         // Populate modal content
         document.getElementById('overall-partner-summary-title').textContent = title;
-        document.getElementById('overall-partner-summary-text').textContent = summary;
+        document.getElementById('overall-partner-summary-text').innerHTML = this.formatShareSummary(summary);
         
         // Show modal
         const modal = document.getElementById('overall-partner-summary-modal');
@@ -2697,7 +2724,8 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
     async copyPartnerSummary() {
         const title = document.getElementById('overall-partner-summary-title').textContent;
-        const summary = document.getElementById('overall-partner-summary-text').textContent;
+        const summaryElement = document.getElementById('overall-partner-summary-text');
+        const summary = summaryElement.textContent || summaryElement.innerText;
         
         const textToCopy = `${title}\n\n${summary}\n\nGenerated on: https://carveragents.ai`;
         
@@ -2792,20 +2820,18 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             
             this.showToast(`Successfully subscribed to "${topicName}"!`, 'success');
             
-            // Update button state immediately for responsive feel
-            const button = document.querySelector(`[data-topic-id="${topicId}"]`);
-            if (button) {
-                button.textContent = '★';
-                button.style.color = '#10b981';
-                button.setAttribute('title', 'Unsubscribe');
-            }
+            // Close search results and return to main dashboard
+            this.showScreen('main-dashboard');
             
-            // Show loading indicator and refresh the search results
-            this.showSearchRefreshLoading();
+            // Show loading indicator on main dashboard
+            this.showMainDashboardLoading();
+            
             try {
-                await this.refreshAfterSubscriptionChange('search');
+                // Clear cache and refresh main regulatory data to show new subscription
+                this.cache.clear();
+                await this.loadRegulatoryData();
             } finally {
-                this.hideSearchRefreshLoading();
+                this.hideMainDashboardLoading();
             }
             
         } catch (error) {
@@ -2860,6 +2886,58 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
     hideSearchRefreshLoading() {
         const overlay = document.getElementById('search-refresh-loading');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+
+    showMainDashboardLoading() {
+        const container = document.getElementById('tag-summaries');
+        if (container) {
+            // Add loading overlay to main dashboard content
+            const overlay = document.createElement('div');
+            overlay.id = 'main-dashboard-loading';
+            overlay.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(255, 255, 255, 0.9);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                border-radius: 8px;
+                min-height: 200px;
+            `;
+            overlay.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                    <div style="width: 32px; height: 32px; border: 3px solid #e5e7eb; border-top: 3px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <span style="font-size: 14px; color: #6b7280; font-weight: 500;">Updating subscriptions...</span>
+                </div>
+            `;
+            
+            // Ensure CSS animation exists
+            if (!document.getElementById('search-loading-styles')) {
+                const style = document.createElement('style');
+                style.id = 'search-loading-styles';
+                style.textContent = `
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            container.style.position = 'relative';
+            container.appendChild(overlay);
+        }
+    }
+
+    hideMainDashboardLoading() {
+        const overlay = document.getElementById('main-dashboard-loading');
         if (overlay) {
             overlay.remove();
         }
