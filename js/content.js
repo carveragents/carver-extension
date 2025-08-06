@@ -57,7 +57,7 @@ class RegulatoryMonitorFloatingButton {
         // Add the button content with Carver icon
         this.button.innerHTML = `
             <div class="rm-btn-icon">
-                <img src="${chrome.runtime.getURL('icons/icon32.png')}" alt="Carver Agents" style="width: 24px; height: 24px; border-radius: 4px;">
+                <img src="${chrome.runtime.getURL('icons/icon32.png')}" alt="Carver Agents" style="width: 32px; height: 32px; border-radius: 4px;">
             </div>
             <div class="rm-btn-tooltip">Carver Agents</div>
         `;
