@@ -392,8 +392,8 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                         <button class="unsubscribe-tile-btn" 
                                 data-topic-id="${topic.tag_id}" 
                                 data-topic-name="${this.escapeHtml(topic.tag_name)}"
-                                title="Unsubscribe from topic">
-                            ×
+                                title="Unsubscribe">
+                            <img src="icons/carver-icons/star_solid_unsubscribe_14x14.svg" alt="Unsubscribe" width="14" height="14">
                         </button>
                     </div>
                     ` : '<div class="topic-actions"></div>'}
@@ -525,10 +525,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                             <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
                         </button>
                         <button class="regwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
-                            👥
+                            <img src="icons/carver-icons/member-list_ExtractEntity_14x14.svg" alt="Extract Names" width="14" height="14">
                         </button>
                         <button class="regwatch-action-btn disabled" disabled title="Extract Timelines (Coming Soon)">
-                            📅
+                            <img src="icons/carver-icons/time-fast_ExtractTimeline_14x14.svg" alt="Extract Timelines" width="14" height="14">
                         </button>
                     </div>
                 </div>
@@ -788,10 +788,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                             </div>
                             <div class="partner-actions">
                                 <button class="btn btn-small btn-secondary edit-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" data-keyword-frequency="${keyword.frequency || 'daily'}" title="Edit Partner">
-                                    <img src="icons/carver-icons/pencil_edit_18x18.svg" alt="Edit" width="18" height="18">
+                                    <img src="icons/carver-icons/user-pen_EditPartner_14x14.svg" alt="Edit" width="14" height="14">
                                 </button>
                                 <button class="btn btn-small btn-secondary delete-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" title="Delete Partner">
-                                    <img src="icons/carver-icons/trash_delete_18x18.svg" alt="Delete" width="18" height="18">
+                                    <img src="icons/carver-icons/delete-user_DeletePartner_14x14.svg" alt="Delete" width="14" height="14">
                                 </button>
                             </div>
                         </div>
@@ -952,8 +952,8 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             this.showScreen('main-dashboard');
             
         } catch (error) {
-            console.error('Failed to unsubscribe from topic:', error);
-            this.showToast('Failed to unsubscribe from topic. Please try again.', 'error');
+            console.error('Failed to unsubscribe:', error);
+            this.showToast('Failed to unsubscribe. Please try again.', 'error');
         }
     }
 
@@ -1612,11 +1612,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             <div class="subscription-item">
                 <div class="subscription-info">
                     <div class="subscription-name">${this.escapeHtml(sub.name || sub.topic_name || sub.subscription_name)}</div>
-                    <div class="subscription-description">${this.escapeHtml(sub.description || '')}</div>
                 </div>
                 <div class="subscription-actions">
-                    <button class="btn btn-small btn-danger unsubscribe-btn" data-topic-id="${sub.id}">
-                        Unsubscribe
+                    <button class="btn btn-small btn-danger unsubscribe-btn" data-topic-id="${sub.id}" data-topic-name="${this.escapeHtml(sub.name || sub.topic_name || sub.subscription_name)}">
+                        <img src="icons/carver-icons/star_solid_unsubscribe_14x14.svg" alt="Unsubscribe" width="14" height="14">
                     </button>
                 </div>
             </div>
@@ -1627,37 +1626,13 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             btn.addEventListener('click', (e) => {
                 const buttonElement = e.currentTarget;
                 const topicId = buttonElement.getAttribute('data-topic-id');
-                this.unsubscribeFromTopicInList(topicId);
+                const topicName = buttonElement.getAttribute('data-topic-name');
+                this.showUnsubscribeConfirmModal(topicId, topicName, 'list');
             });
         });
     }
 
-    async unsubscribeFromTopicInList(topicId) {
-        try {
-            const userId = this.getUserId();
-            if (!userId) {
-                this.showToast('User information not available', 'error');
-                return;
-            }
-
-            console.log(`Unsubscribing from topic ${topicId} for user ${userId} (from list)`);
-            await this.apiCall(`/core/users/${userId}/topics/${topicId}/unsubscribe`, {
-                method: 'DELETE'
-            });
-            
-            this.showToast('Successfully unsubscribed from institute!', 'success');
-            
-            // Refresh the subscriptions list
-            await this.showSubscriptions();
-            
-            // Clear cache and refresh regulatory data to update subscription indicators
-            this.cache.clear();
-            
-        } catch (error) {
-            console.error('Failed to unsubscribe from topic:', error);
-            this.showToast('Failed to unsubscribe. Please try again.', 'error');
-        }
-    }
+    // Removed unsubscribeFromTopicInList - now using confirmation modal for all unsubscribe actions
 
     // Legacy method - keeping for compatibility but updating to use new API
     async unsubscribe(subscriptionId) {
@@ -1761,9 +1736,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                     <button class="search-subscribe-btn" 
                             data-topic-id="${topic.tag_id}" 
                             data-topic-name="${this.escapeHtml(topic.tag_name)}"
-                            style="background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; color: ${isSubscribed ? '#10b981' : '#6b7280'};"
-                            title="${isSubscribed ? 'Unsubscribe from topic' : 'Subscribe to topic'}">
-                        ${isSubscribed ? '★' : '☆'}
+                            data-subscribed="${isSubscribed}"
+                            style="background: none; border: none; cursor: pointer; padding: 4px;"
+                            title="${isSubscribed ? 'Unsubscribe' : 'Subscribe'}">
+                        <img src="icons/carver-icons/${isSubscribed ? 'star_solid_unsubscribe_14x14.svg' : 'star_subscribe_14x14.svg'}" alt="${isSubscribed ? 'Unsubscribe' : 'Subscribe'}" width="14" height="14">
                     </button>
                 </div>
                 <div class="search-result-description">
@@ -1783,7 +1759,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 const buttonElement = e.currentTarget;
                 const topicId = buttonElement.getAttribute('data-topic-id');
                 const topicName = buttonElement.getAttribute('data-topic-name');
-                const isSubscribed = buttonElement.textContent.trim() === '★';
+                const isSubscribed = buttonElement.getAttribute('data-subscribed') === 'true';
                 
                 console.log('Topic:', topicName, 'isSubscribed:', isSubscribed);
                 
@@ -2135,8 +2111,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                     <button class="topic-suggestion-subscribe-btn" 
                             data-topic-id="${topic.tag_id}" 
                             data-topic-name="${this.escapeHtml(topic.tag_name)}"
-                            title="${isSubscribed ? 'Unsubscribe from topic' : 'Subscribe to topic'}">
-                        ${isSubscribed ? '★' : '☆'}
+                            data-subscribed="${isSubscribed}"
+                            title="${isSubscribed ? 'Unsubscribe' : 'Subscribe'}">
+                        <img src="icons/carver-icons/${isSubscribed ? 'star_solid_unsubscribe_14x14.svg' : 'star_subscribe_14x14.svg'}" alt="${isSubscribed ? 'Unsubscribe' : 'Subscribe'}" width="14" height="14">
                     </button>
                 </div>
             `;
@@ -2153,7 +2130,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 // Check if user is subscribed to this topic
                 const topicId = e.currentTarget.getAttribute('data-topic-id');
                 const subscribeBtn = e.currentTarget.querySelector('.topic-suggestion-subscribe-btn');
-                const isSubscribed = subscribeBtn && subscribeBtn.textContent.trim() === '★';
+                const isSubscribed = subscribeBtn && subscribeBtn.getAttribute('data-subscribed') === 'true';
                 
                 if (!isSubscribed) {
                     // Show a message that they need to subscribe first
@@ -2173,7 +2150,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 const buttonElement = e.currentTarget;
                 const topicId = buttonElement.getAttribute('data-topic-id');
                 const topicName = buttonElement.getAttribute('data-topic-name');
-                const isCurrentlySubscribed = buttonElement.textContent.trim() === '★';
+                const isCurrentlySubscribed = buttonElement.getAttribute('data-subscribed') === 'true';
                 
                 if (isCurrentlySubscribed) {
                     this.showUnsubscribeConfirmModal(topicId, topicName, 'suggestions');
@@ -2260,6 +2237,23 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             
             console.log('Partner details received:', keywordDetails);
             
+            // Debug: Check feed entries and their dates
+            if (keywordDetails.feed_entries && keywordDetails.feed_entries.length > 0) {
+                console.log('Feed entries found:', keywordDetails.feed_entries.length);
+                keywordDetails.feed_entries.forEach((entry, index) => {
+                    console.log(`Entry ${index + 1}:`, {
+                        title: entry.title,
+                        published_date: entry.published_date,
+                        published_date_type: typeof entry.published_date,
+                        formatted_date: this.formatActualDate(entry.published_date),
+                        is_epoch: this.isEpochDate(entry.published_date),
+                        entry_id: entry.entry_id
+                    });
+                });
+            } else {
+                console.log('No feed entries found in partner details');
+            }
+            
             // Validate response
             if (!keywordDetails || !keywordDetails.topic_name) {
                 throw new Error('Invalid partner details response');
@@ -2330,6 +2324,18 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             return;
         }
 
+        // Debug: Check feed entries and their dates for partner screen
+        console.log('Partner screen - Feed entries:', feedEntries.length);
+        feedEntries.forEach((entry, index) => {
+            console.log(`Partner Screen Entry ${index + 1}:`, {
+                title: entry.title?.substring(0, 50) + '...',
+                published_date: entry.published_date,
+                published_date_type: typeof entry.published_date,
+                formatted_date: this.formatActualDate(entry.published_date),
+                is_epoch: this.isEpochDate(entry.published_date)
+            });
+        });
+
         // Sort entries by published date (latest first)
         const sortedEntries = [...feedEntries].sort((a, b) => {
             const dateA = new Date(a.published_date);
@@ -2355,10 +2361,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                             <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
                         </button>
                         <button class="partnerwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
-                            👥
+                            <img src="icons/carver-icons/member-list_ExtractEntity_14x14.svg" alt="Extract Names" width="14" height="14">
                         </button>
                         <button class="partnerwatch-action-btn disabled" disabled title="Extract Timelines (Coming Soon)">
-                            📅
+                            <img src="icons/carver-icons/time-fast_ExtractTimeline_14x14.svg" alt="Extract Timelines" width="14" height="14">
                         </button>
                     </div>
                 </div>
@@ -2948,16 +2954,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         this.cache.clear();
         
         if (source === 'search') {
-            // Refresh search results
-            const searchInput = document.getElementById('search-input');
-            const query = searchInput?.value?.trim() || '';
-            if (query) {
-                await this.handleSearchScreenSearch();
-            } else {
-                // Show recommendations
-                const results = await this.apiCall('/extension/topics/recommendations');
-                this.renderSearchResults(results, true);
-            }
+            // Close search results and go back to main dashboard
+            this.showScreen('main-dashboard');
+            await this.loadRegulatoryData();
         } else if (source === 'suggestions') {
             // Refresh topics suggestions
             const searchInput = document.getElementById('topics-search-input');
@@ -2965,6 +2964,12 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             await this.handleTopicsSearch(currentValue);
             
             // Refresh main dashboard
+            await this.loadRegulatoryData();
+        } else if (source === 'list') {
+            // Refresh My Subscriptions page
+            await this.showSubscriptions();
+            
+            // Also refresh main dashboard for consistency
             await this.loadRegulatoryData();
         } else {
             // Refresh main dashboard

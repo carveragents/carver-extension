@@ -398,6 +398,7 @@ html, body {
     font-weight: 600;
     transition: all 0.2s ease;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2px;
 }
 
 .icon-btn:hover {
@@ -405,6 +406,31 @@ html, body {
     border-color: #4b5563;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transform: translateY(-1px);
+}
+
+/* Back button styling - remove bounding boxes */
+#back-btn,
+#partner-back-btn,
+#search-back-btn,
+#subscriptions-back-btn,
+#settings-back-btn {
+    background: none !important;
+    border: none !important;
+    padding: 4px !important;
+    box-shadow: none !important;
+    margin-bottom: 0 !important;
+    margin-top: 4px !important;
+}
+
+#back-btn:hover,
+#partner-back-btn:hover,
+#search-back-btn:hover,
+#subscriptions-back-btn:hover,
+#settings-back-btn:hover {
+    background: #f3f4f6 !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
 /* Form Elements */
@@ -979,7 +1005,7 @@ select:focus {
 
 .partner-header-actions {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     flex-shrink: 0;
 }
 
@@ -1148,7 +1174,7 @@ select:focus {
 
 .topics-actions {
     display: flex;
-    gap: 8px;
+    gap: 4px;
 }
 
 .topics-actions .icon-btn {
@@ -1427,8 +1453,20 @@ select:focus {
 
 /* Specific rule for subscriptions screen header */
 #subscriptions-screen .header h1 {
+    font-size: 16px;
+    font-weight: 600;
     text-align: left;
     margin-left: 0 !important;
+    flex: 1;
+}
+
+/* Settings screen header */
+#settings-screen .header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    text-align: left;
+    margin-left: 0 !important;
+    flex: 1;
 }
 
 /* Meta Summary */
@@ -1515,9 +1553,8 @@ select:focus {
     color: orange;
     text-align: left;
     margin-right: 12px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    line-height: 1.3;
 }
 
 .link-header .link-meta {
@@ -2317,7 +2354,6 @@ select:focus {
     flex: 1;
     text-align: left;
     margin-right: 8px;
-    max-width: 15ch; /* Approximately 20 characters */
 }
 
 .partnerwatch-tile-title a {
@@ -2328,10 +2364,7 @@ select:focus {
     line-height: 1.4;
     display: block;
     text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 15ch; /* Approximately 20 characters */
+    white-space: normal;
 }
 
 .partnerwatch-tile-title a:hover {
@@ -2440,7 +2473,7 @@ select:focus-visible {
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
-    padding: 16px 20px;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2462,7 +2495,7 @@ select:focus-visible {
 }
 
 .subscription-name {
-    font-weight: 600;
+    font-weight: 400;
     font-size: 13px;
     color: #1a1a1a;
     display: flex;
@@ -2571,14 +2604,13 @@ select:focus-visible {
 }
 
 .subscription-actions .unsubscribe-btn {
-    background: #fef2f2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
+    background: none;
+    color: #6b7280;
+    border: none;
 }
 
 .subscription-actions .unsubscribe-btn:hover {
-    background: #fee2e2;
-    border-color: #fca5a5;
+    background: #f3f4f6;
     transform: translateY(-1px);
 }
 
