@@ -2369,8 +2369,26 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             });
         });
 
-        // Sort entries by published date (latest first)
-        const sortedEntries = [...feedEntries].sort((a, b) => {
+        // Remove duplicate entries based on "link" key (primary method)
+        const uniqueEntries = feedEntries.filter((entry, index, arr) => {
+            // Primary deduplication: by link URL (most reliable for RSS feeds)
+            if (entry.link) {
+                return arr.findIndex(e => e.link === entry.link) === index;
+            }
+            
+            // Fallback deduplication: by title if no link
+            if (entry.title) {
+                return arr.findIndex(e => e.title === entry.title) === index;
+            }
+            
+            // Last resort: keep entry if no link or title (shouldn't happen)
+            return true;
+        });
+
+        console.log(`Partner screen - Removed ${feedEntries.length - uniqueEntries.length} duplicate entries`);
+
+        // Sort unique entries by published date (latest first)
+        const sortedEntries = [...uniqueEntries].sort((a, b) => {
             const dateA = new Date(a.published_date);
             const dateB = new Date(b.published_date);
             return dateB - dateA;
