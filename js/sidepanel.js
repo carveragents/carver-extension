@@ -383,9 +383,8 @@ class RegulatoryMonitorSidePanel {
 ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 </div>
                 <div class="topic-footer">
-                    <div class="topic-meta">
-                        <span>${topic.link_count} ${topic.link_count === 1 ? 'source' : 'sources'} 
-                        ${topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}</span>` : '<span></span>'}
+                    <div class="topic-meta" data-topic-id="${topic.tag_id}">
+                        <span class="sources-info">Loading...</span>
                     </div>
                     ${isSubscribed ? `
                     <div class="topic-actions">
@@ -425,6 +424,40 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 this.showUnsubscribeConfirmModal(topicId, topicName, 'tile');
             });
         });
+
+        // Fetch actual feed entries counts for each topic
+        this.updateTopicSourcesCounts(sortedSummaries);
+    }
+
+    async updateTopicSourcesCounts(topics) {
+        // Update sources count for each topic by fetching details
+        for (const topic of topics) {
+            try {
+                const topicDetails = await this.apiCall(`/extension/topics/${topic.tag_id}/details`);
+                const feedEntries = topicDetails.feed_entries || [];
+                const sourcesCount = feedEntries.length;
+                
+                // Update the sources info in the UI
+                const topicMetaElement = document.querySelector(`.topic-meta[data-topic-id="${topic.tag_id}"] .sources-info`);
+                if (topicMetaElement) {
+                    if (sourcesCount > 0) {
+                        const lastUpdatedText = topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        topicMetaElement.innerHTML = `${sourcesCount} ${sourcesCount === 1 ? 'source' : 'sources'}${lastUpdatedText}`;
+                    } else {
+                        // Hide sources info when no data
+                        topicMetaElement.innerHTML = topic.last_updated ? `Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                    }
+                }
+            } catch (error) {
+                console.error(`Failed to fetch details for topic ${topic.tag_id}:`, error);
+                // Fall back to cached count
+                const topicMetaElement = document.querySelector(`.topic-meta[data-topic-id="${topic.tag_id}"] .sources-info`);
+                if (topicMetaElement) {
+                    const lastUpdatedText = topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                    topicMetaElement.innerHTML = `${topic.link_count || 0} ${(topic.link_count || 0) === 1 ? 'source' : 'sources'}${lastUpdatedText}`;
+                }
+            }
+        }
     }
 
     async showTopicDetails(topicId) {
@@ -522,7 +555,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                     ${!this.isEpochDate(entry.published_date) ? `<div class="regwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : '<div class="regwatch-tile-date"></div>'}
                     <div class="regwatch-tile-actions">
                         <button class="regwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
-                            <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
+                            <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="14" height="14">
                         </button>
                         <button class="regwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
                             <img src="icons/carver-icons/member-list_ExtractEntity_14x14.svg" alt="Extract Names" width="14" height="14">
@@ -2358,7 +2391,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                     ${!this.isEpochDate(entry.published_date) ? `<div class="partnerwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : '<div class="partnerwatch-tile-date"></div>'}
                     <div class="partnerwatch-tile-actions">
                         <button class="partnerwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
-                            <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
+                            <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="14" height="14">
                         </button>
                         <button class="partnerwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
                             <img src="icons/carver-icons/member-list_ExtractEntity_14x14.svg" alt="Extract Names" width="14" height="14">

@@ -912,11 +912,21 @@ select:focus {
 
 .partner-actions .btn {
     font-size: 12px;
-    padding: 4px 6px;
-    min-height: 24px;
-    min-width: 24px;
+    padding: 4px;
+    min-height: auto;
+    min-width: auto;
     opacity: 0.7;
     transition: opacity 0.2s ease;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.partner-actions .btn:hover {
+    background: #f3f4f6 !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
 .partner-card:hover .partner-actions .btn {
@@ -1026,7 +1036,7 @@ select:focus {
 }
 
 .partner-header-actions .icon-btn:hover {
-    background: #f9fafb;
+    background: #b4b5b7;
 }
 
 .partner-search {
@@ -1198,7 +1208,7 @@ select:focus {
     background: #f9fafb;
     border-color: #4b5563;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
+    transform: translateY(-1px) scale(1.1);
 }
 
 /* Ensure tooltips work properly */
@@ -1529,12 +1539,57 @@ select:focus {
     color: #9ca3af;
 }
 
+/* Meta footer for RegWatch details - aligns last updated and share button */
+.meta-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+/* Sentiment and share container for Partner details */
+.sentiment-and-share {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.sentiment-and-share .sentiment-indicator {
+    flex: 1;
+}
+
+.sentiment-and-share .share-summary-btn {
+    flex-shrink: 0;
+}
+
 /* Link Summaries */
 .link-summaries h3 {
     font-size: 16px;
     font-weight: 600;
     margin-bottom: 16px;
     color: #1a1a1a;
+}
+
+/* No summary/updates styling - center text vertically and horizontally */
+.no-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
+    text-align: center;
+    border: none;
+}
+
+/* Remove borders/lines from containers when showing no-summary */
+#link-list:has(.no-summary),
+#partner-feed-list:has(.no-summary) {
+    border: none;
+    border-top: none;
+    border-bottom: none;
 }
 
 .link-header {

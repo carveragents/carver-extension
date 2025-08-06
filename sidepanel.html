@@ -183,15 +183,17 @@
                 <!-- Summary Title -->
                 <div class="section-header">
                     <h3>Summary</h3>
-                    <button id="share-topic-summary" class="btn btn-small btn-secondary share-summary-btn" title="Share Summary">
-                        <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
-                    </button>
                 </div>
                 
                 <!-- Tag Meta Summary -->
                 <div class="meta-summary">
                     <p id="tag-meta-summary"></p>
-                    <small id="tag-last-updated"></small>
+                    <div class="meta-footer">
+                        <small id="tag-last-updated"></small>
+                        <button id="share-topic-summary" class="btn btn-small btn-secondary share-summary-btn" title="Share Summary">
+                            <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Link Summaries -->
@@ -215,9 +217,6 @@
                 <!-- Summary Title -->
                 <div class="section-header">
                     <h3>Summary</h3>
-                    <button id="share-partner-summary" class="btn btn-small btn-secondary share-summary-btn" title="Share Summary">
-                        <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
-                    </button>
                 </div>
                 
                 <!-- Partner Meta Summary -->
@@ -226,11 +225,16 @@
                         <p class="no-summary">No summary available yet</p>
                     </div>
                     <small id="partner-screen-last-updated"></small>
-                    <div id="partner-sentiment-indicator" class="sentiment-indicator hidden">
-                        <span class="sentiment-label" id="partner-sentiment-label"></span>
-                        <div class="sentiment-bar">
-                            <div class="sentiment-fill" id="partner-sentiment-fill"></div>
+                    <div class="sentiment-and-share">
+                        <div id="partner-sentiment-indicator" class="sentiment-indicator hidden">
+                            <span class="sentiment-label" id="partner-sentiment-label"></span>
+                            <div class="sentiment-bar">
+                                <div class="sentiment-fill" id="partner-sentiment-fill"></div>
+                            </div>
                         </div>
+                        <button id="share-partner-summary" class="btn btn-small btn-secondary share-summary-btn" title="Share Summary">
+                            <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="18" height="18">
+                        </button>
                     </div>
                 </div>
 
