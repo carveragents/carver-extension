@@ -52,7 +52,7 @@ html, body {
     border-radius: 12px;
     width: 90%;
     max-width: 500px;
-    max-height: 80vh;
+    margin: auto 0;
     overflow: hidden;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
     border: 1px solid #e5e7eb;
@@ -60,7 +60,7 @@ html, body {
 
 .modal-header {
     background: #fafafa;
-    padding: 20px 24px;
+    padding: 10px 14px;
     border-bottom: 1px solid #e5e7eb;
     display: flex;
     justify-content: space-between;
@@ -1721,8 +1721,10 @@ select:focus {
     height: 100%;
     background: rgba(0, 0, 0, 0.6);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    padding: 20px 0;
+    overflow-y: auto;
     z-index: 1000;
     backdrop-filter: blur(4px);
 }
@@ -1849,7 +1851,7 @@ select:focus {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    padding: 20px 24px;
+    padding: 10px 14px;
     border-top: 1px solid #e5e7eb;
     background: #fafafa;
 }
