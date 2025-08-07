@@ -1036,7 +1036,55 @@ select:focus {
 }
 
 .partner-header-actions .icon-btn:hover {
-    background: #b4b5b7;
+    background: #f9fafb;
+    border: 1px solid #4b5563;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Sentiment Filter Styling */
+.sentiment-filter-container {
+    position: relative;
+    display: inline-block;
+}
+
+.sentiment-filter-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    min-width: 150px;
+    margin-top: 4px;
+}
+
+.sentiment-filter-dropdown.hidden {
+    display: none;
+}
+
+.filter-option {
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.filter-option:last-child {
+    border-bottom: none;
+}
+
+.filter-option:hover {
+    background: #f9fafb;
+}
+
+.filter-option.active {
+    background: #bae424;
+    color: #1a1a1a;
+    font-weight: 600;
 }
 
 .partner-search {

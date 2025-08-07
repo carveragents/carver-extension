@@ -5,7 +5,7 @@ class RegulatoryMonitorSidePanel {
         this.currentUser = null;
         this.currentScreen = 'loading';
         //this.apiHost = 'http://localhost:8000'; // Default to local development
-        this.apiHost = 'https://staging.carveragents.ai'; // Default to production
+        this.apiHost = 'https://staging.carveragents.ai'; // Default to staging
         this.apiBaseUrl = `${this.apiHost}/api/v1`;
         this.cache = new Map();
         this.retryCount = 0;
@@ -88,6 +88,34 @@ class RegulatoryMonitorSidePanel {
         document.getElementById('cancel-partner-btn')?.addEventListener('click', () => this.hideAddPartnerModal());
         document.getElementById('save-partner-btn')?.addEventListener('click', () => this.handleSavePartner());
         document.getElementById('horizon-refresh-btn')?.addEventListener('click', () => this.refreshPartnerData());
+        
+        // Sentiment filter button and dropdown
+        document.getElementById('sentiment-filter-btn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleSentimentFilter();
+        });
+        
+        // Sentiment filter options
+        document.querySelectorAll('.filter-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const sentiment = e.target.getAttribute('data-sentiment');
+                this.applySentimentFilter(sentiment);
+            });
+        });
+        
+        // Close sentiment filter when clicking outside
+        document.addEventListener('click', () => {
+            this.closeSentimentFilter();
+        });
+        
+        // Initialize sentiment filter
+        this.currentSentimentFilter = 'all';
+        setTimeout(() => {
+            const allOption = document.querySelector('[data-sentiment="all"]');
+            if (allOption) {
+                allOption.classList.add('active');
+            }
+        }, 100);
         
         // Edit Partner Modal Event Listeners
         document.getElementById('close-edit-partner-modal')?.addEventListener('click', () => this.hideEditPartnerModal());
@@ -547,14 +575,14 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             <div class="regwatch-tile" data-entry-id="${entry.entry_id}">
                 <div class="regwatch-tile-title">
                     <a href="${entry.link}" target="_blank" rel="noopener noreferrer" title="${this.escapeHtml(entry.title)}">
-                        ${this.escapeHtml(entry.title)}
+                        ${this.escapeHtml(this.extractTextFromHtml(entry.title))}
                     </a>
                 </div>
                 <div class="regwatch-tile-summary">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
                 <div class="regwatch-tile-footer">
                     ${!this.isEpochDate(entry.published_date) ? `<div class="regwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : '<div class="regwatch-tile-date"></div>'}
                     <div class="regwatch-tile-actions">
-                        <button class="regwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
+                        <button class="regwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(this.extractTextFromHtml(entry.title))}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
                             <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="14" height="14">
                         </button>
                         <button class="regwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
@@ -1252,6 +1280,20 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         return text.replace(/[&<>"']/g, (m) => map[m]);
     }
 
+    extractTextFromHtml(html) {
+        if (!html) return '';
+        
+        // Create a temporary DOM element to parse the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        // Extract just the text content, which will strip all HTML tags
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        
+        // Clean up any extra whitespace
+        return textContent.trim();
+    }
+
     cleanSummaryText(text) {
         if (!text) return '';
         
@@ -1459,7 +1501,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             <div class="link-item" data-entry-id="${entry.entry_id}">
                 <div class="link-title">
                     <a href="${entry.link}" target="_blank" rel="noopener noreferrer" class="link-title-text">
-                        ${this.escapeHtml(this.truncateText(entry.title, 80))}
+                        ${this.escapeHtml(this.truncateText(this.extractTextFromHtml(entry.title), 80))}
                     </a>
                 </div>
                 <div class="entry-sentiment">
@@ -1467,7 +1509,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 </div>
                 <div class="link-summary-text">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
                 <div class="link-actions">
-                    <button class="link-action" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}">
+                    <button class="link-action" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(this.extractTextFromHtml(entry.title))}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}">
                         ${this.getActionLabel('share_summary')}
                     </button>
                     <button class="link-action disabled" disabled title="Coming Soon">
@@ -2398,7 +2440,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             <div class="partnerwatch-tile" data-entry-id="${entry.entry_id}">
                 <div class="partnerwatch-tile-title">
                     <a href="${entry.link}" target="_blank" rel="noopener noreferrer" title="${this.escapeHtml(entry.title)}">
-                        ${this.escapeHtml(entry.title)}
+                        ${this.escapeHtml(this.extractTextFromHtml(entry.title))}
                     </a>
                 </div>
                 <div class="partnerwatch-tile-sentiment">
@@ -2408,7 +2450,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 <div class="partnerwatch-tile-footer">
                     ${!this.isEpochDate(entry.published_date) ? `<div class="partnerwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : '<div class="partnerwatch-tile-date"></div>'}
                     <div class="partnerwatch-tile-actions">
-                        <button class="partnerwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
+                        <button class="partnerwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(this.extractTextFromHtml(entry.title))}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
                             <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="14" height="14">
                         </button>
                         <button class="partnerwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
@@ -3268,6 +3310,63 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             console.error('Failed to delete partner:', error);
             this.showToast('Failed to delete partner. Please try again.', 'error');
         }
+    }
+
+    // Sentiment Filter Methods
+    toggleSentimentFilter() {
+        const dropdown = document.getElementById('sentiment-filter-dropdown');
+        if (dropdown) {
+            dropdown.classList.toggle('hidden');
+        }
+    }
+
+    closeSentimentFilter() {
+        const dropdown = document.getElementById('sentiment-filter-dropdown');
+        if (dropdown && !dropdown.classList.contains('hidden')) {
+            dropdown.classList.add('hidden');
+        }
+    }
+
+    applySentimentFilter(selectedSentiment) {
+        // Update active filter option
+        document.querySelectorAll('.filter-option').forEach(option => {
+            option.classList.remove('active');
+        });
+        document.querySelector(`[data-sentiment="${selectedSentiment}"]`).classList.add('active');
+
+        // Store current filter
+        this.currentSentimentFilter = selectedSentiment;
+
+        // Filter the partner tiles
+        this.filterPartnerTilesBySentiment(selectedSentiment);
+
+        // Close the dropdown
+        this.closeSentimentFilter();
+    }
+
+    filterPartnerTilesBySentiment(sentiment) {
+        const partnerCards = document.querySelectorAll('.partner-card');
+        
+        partnerCards.forEach(card => {
+            if (sentiment === 'all') {
+                card.style.display = 'block';
+            } else {
+                const sentimentElement = card.querySelector('.partner-sentiment span');
+                if (sentimentElement) {
+                    const cardSentiment = sentimentElement.textContent.replace('Sentiment: ', '').toLowerCase();
+                    if (cardSentiment === sentiment.toLowerCase()) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                } else {
+                    // If no sentiment info, hide when filtering (unless "all")
+                    card.style.display = 'none';
+                }
+            }
+        });
+        
+        console.log(`Filtered partner cards by sentiment: ${sentiment}`);
     }
 }
 

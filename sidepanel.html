@@ -146,6 +146,17 @@
                             </div>
                         </div>
                         <div class="partner-header-actions">
+                            <div class="sentiment-filter-container" style="display: none;">
+                                <button id="sentiment-filter-btn" class="icon-btn" title="Filter by Sentiment">
+                                    <img src="icons/carver-icons/share_18x18.svg" alt="Filter" width="14" height="14" style="transform: rotate(90deg);">
+                                </button>
+                                <div id="sentiment-filter-dropdown" class="sentiment-filter-dropdown hidden">
+                                    <div class="filter-option" data-sentiment="all">All Sentiments</div>
+                                    <div class="filter-option" data-sentiment="positive">Positive</div>
+                                    <div class="filter-option" data-sentiment="negative">Negative</div>
+                                    <div class="filter-option" data-sentiment="neutral">Neutral</div>
+                                </div>
+                            </div>
                             <button id="add-partner-btn" class="icon-btn" title="Add Partner"><img src="icons/carver-icons/user-add_AddPartner_14x14.svg" alt="Add Partner" width="14" height="14"></button>
                             <button id="horizon-refresh-btn" class="icon-btn" title="Refresh"><img src="icons/carver-icons/refresh_14x14.svg" alt="Refresh" width="14" height="14"></button>
                         </div>
