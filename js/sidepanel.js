@@ -5,7 +5,8 @@ class RegulatoryMonitorSidePanel {
         this.currentUser = null;
         this.currentScreen = 'loading';
         //this.apiHost = 'http://localhost:8000'; // Default to local development
-        this.apiHost = 'https://staging.carveragents.ai'; // Default to staging
+        //this.apiHost = 'https://staging.carveragents.ai'; // Default to staging
+        this.apiHost = 'https://app.carveragents.ai'; // Default to production
         this.apiBaseUrl = `${this.apiHost}/api/v1`;
         this.cache = new Map();
         this.retryCount = 0;
