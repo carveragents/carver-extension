@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Carver",
+  "name": "Carver Agents",
   "version": "1.0.0",
   "description": "Stay updated with regulatory and partner updates",
   "permissions": [
@@ -19,7 +19,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Open Carver"
+    "default_title": "Open Carver Agents"
   },
   "side_panel": {
     "default_path": "sidepanel.html"
@@ -43,7 +43,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["icons/*", "styles/*"],
+      "resources": ["icons/*", "icons/carver-icons/*", "styles/*"],
       "matches": ["<all_urls>"]
     }
   ]

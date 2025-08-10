@@ -52,7 +52,7 @@ html, body {
     border-radius: 12px;
     width: 90%;
     max-width: 500px;
-    max-height: 80vh;
+    margin: auto 0;
     overflow: hidden;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
     border: 1px solid #e5e7eb;
@@ -60,7 +60,7 @@ html, body {
 
 .modal-header {
     background: #fafafa;
-    padding: 20px 24px;
+    padding: 10px 14px;
     border-bottom: 1px solid #e5e7eb;
     display: flex;
     justify-content: space-between;
@@ -91,7 +91,7 @@ html, body {
 }
 
 .modal-body {
-    padding: 24px;
+    padding: 20px;
     max-height: 60vh;
     overflow-y: auto;
 }
@@ -243,7 +243,7 @@ html, body {
 .header-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 1px;
     flex-shrink: 0;
 }
 
@@ -398,6 +398,7 @@ html, body {
     font-weight: 600;
     transition: all 0.2s ease;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2px;
 }
 
 .icon-btn:hover {
@@ -405,6 +406,31 @@ html, body {
     border-color: #4b5563;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transform: translateY(-1px);
+}
+
+/* Back button styling - remove bounding boxes */
+#back-btn,
+#partner-back-btn,
+#search-back-btn,
+#subscriptions-back-btn,
+#settings-back-btn {
+    background: none !important;
+    border: none !important;
+    padding: 4px !important;
+    box-shadow: none !important;
+    margin-bottom: 0 !important;
+    margin-top: 4px !important;
+}
+
+#back-btn:hover,
+#partner-back-btn:hover,
+#search-back-btn:hover,
+#subscriptions-back-btn:hover,
+#settings-back-btn:hover {
+    background: #f3f4f6 !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
 /* Form Elements */
@@ -509,7 +535,7 @@ select:focus {
 .tag-summaries {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
 }
 
 .tag-card {
@@ -651,13 +677,11 @@ select:focus {
 
 /* Share Summary Button Styling */
 .share-summary-btn {
-    position: absolute;
-    bottom: 4px;
-    right: 10px;
+    position: static;
     font-size: 11px;
-    padding: 6px 12px;
-    background: #f9fafb;
-    border: 1px solid #6b7280;
+    padding: 4px;
+    background: none;
+    border: none;
     color: #374151;
     border-radius: 4px;
     cursor: pointer;
@@ -665,10 +689,8 @@ select:focus {
 }
 
 .share-summary-btn:hover {
-    background: #f3f4f6;
-    border-color: #4b5563;
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    opacity: 0.7;
 }
 
 
@@ -736,10 +758,9 @@ select:focus {
 }
 
 .topic-title {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 30ch;
+    line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .topic-meta {
@@ -891,11 +912,21 @@ select:focus {
 
 .partner-actions .btn {
     font-size: 12px;
-    padding: 4px 6px;
-    min-height: 24px;
-    min-width: 24px;
+    padding: 4px;
+    min-height: auto;
+    min-width: auto;
     opacity: 0.7;
     transition: opacity 0.2s ease;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.partner-actions .btn:hover {
+    background: #f3f4f6 !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
 .partner-card:hover .partner-actions .btn {
@@ -984,13 +1015,13 @@ select:focus {
 
 .partner-header-actions {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     flex-shrink: 0;
 }
 
 .partner-header-actions .icon-btn {
-    background: #ffffff;
-    border: 1px solid #6b7280;
+    background: none;
+    border: none;
     color: #1f2937;
     width: 32px;
     height: 32px;
@@ -1002,14 +1033,58 @@ select:focus {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .partner-header-actions .icon-btn:hover {
     background: #f9fafb;
-    border-color: #4b5563;
+    border: 1px solid #4b5563;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transform: translateY(-1px);
+}
+
+/* Sentiment Filter Styling */
+.sentiment-filter-container {
+    position: relative;
+    display: inline-block;
+}
+
+.sentiment-filter-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    min-width: 150px;
+    margin-top: 4px;
+}
+
+.sentiment-filter-dropdown.hidden {
+    display: none;
+}
+
+.filter-option {
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.filter-option:last-child {
+    border-bottom: none;
+}
+
+.filter-option:hover {
+    background: #f9fafb;
+}
+
+.filter-option.active {
+    background: #bae424;
+    color: #1a1a1a;
+    font-weight: 600;
 }
 
 .partner-search {
@@ -1064,6 +1139,9 @@ select:focus {
 
 .partners-list {
     margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .partner-item {
@@ -1154,7 +1232,7 @@ select:focus {
 
 .topics-actions {
     display: flex;
-    gap: 8px;
+    gap: 4px;
 }
 
 .topics-actions .icon-btn {
@@ -1178,7 +1256,7 @@ select:focus {
     background: #f9fafb;
     border-color: #4b5563;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
+    transform: translateY(-1px) scale(1.1);
 }
 
 /* Ensure tooltips work properly */
@@ -1411,15 +1489,42 @@ select:focus {
 
 /* Partner Details Page Title */
 #partner-details .header h1 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
+    align-items: flex-start;
+    flex: 1;
 }
 
 /* Topic Details Page Title */
 #tag-details .header h1 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
-    margin-left: auto;
+    align-items: flex-start;
+    flex: 1;
+}
+
+/* Ensure all header titles are left-aligned */
+.header h1 {
+    text-align: left;
+    margin-left: 0 !important;
+}
+
+/* Specific rule for subscriptions screen header */
+#subscriptions-screen .header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    text-align: left;
+    margin-left: 0 !important;
+    flex: 1;
+}
+
+/* Settings screen header */
+#settings-screen .header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    text-align: left;
+    margin-left: 0 !important;
+    flex: 1;
 }
 
 /* Meta Summary */
@@ -1482,12 +1587,57 @@ select:focus {
     color: #9ca3af;
 }
 
+/* Meta footer for RegWatch details - aligns last updated and share button */
+.meta-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+/* Sentiment and share container for Partner details */
+.sentiment-and-share {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.sentiment-and-share .sentiment-indicator {
+    flex: 1;
+}
+
+.sentiment-and-share .share-summary-btn {
+    flex-shrink: 0;
+}
+
 /* Link Summaries */
 .link-summaries h3 {
     font-size: 16px;
     font-weight: 600;
     margin-bottom: 16px;
     color: #1a1a1a;
+}
+
+/* No summary/updates styling - center text vertically and horizontally */
+.no-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
+    text-align: center;
+    border: none;
+}
+
+/* Remove borders/lines from containers when showing no-summary */
+#link-list:has(.no-summary),
+#partner-feed-list:has(.no-summary) {
+    border: none;
+    border-top: none;
+    border-bottom: none;
 }
 
 .link-header {
@@ -1506,9 +1656,8 @@ select:focus {
     color: orange;
     text-align: left;
     margin-right: 12px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    line-height: 1.3;
 }
 
 .link-header .link-meta {
@@ -1620,8 +1769,10 @@ select:focus {
     height: 100%;
     background: rgba(0, 0, 0, 0.6);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    padding: 20px 0;
+    overflow-y: auto;
     z-index: 1000;
     backdrop-filter: blur(4px);
 }
@@ -1632,36 +1783,86 @@ select:focus {
 
 /* Share Summary Modal Specific Styling */
 .share-content {
-    padding: 8px 0;
+    padding: 10px 0;
 }
 
 .share-field {
-    margin-bottom: 16px;
+    margin-bottom: 24px;
 }
 
-.share-field label {
+.share-field strong {
     font-weight: 600;
     color: #374151;
     font-size: 13px;
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
 .share-field p {
-    margin: 0;
-    padding: 8px 0;
-    line-height: 1.6;
+    margin: 8px 0 0 0;
+    padding: 0;
+    line-height: 1.5;
     color: #1f2937;
+    font-size: 13px;
 }
 
 #share-title {
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
     color: #1a1a1a;
+    line-height: 1.5;
+}
+
+/* Overall summary modal title styling */
+#overall-topic-summary-title,
+#overall-partner-summary-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: #1a1a1a;
+    line-height: 1.4;
+    margin: 0;
+}
+
+/* Overall summary modal text styling */
+#overall-topic-summary-text,
+#overall-partner-summary-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #1f2937;
+    margin: 8px 0 0 0;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Overall summary modal source link styling */
+#overall-topic-summary-modal .share-field a,
+#overall-partner-summary-modal .share-field a {
+    color: #1f2937;
+    text-decoration: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.5;
+    font-size: 13px;
+    display: block;
+    margin: 8px 0 0 0;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+#overall-topic-summary-modal .share-field a:hover,
+#overall-partner-summary-modal .share-field a:hover {
+    color: #374151;
+    text-decoration: underline;
 }
 
 #share-url {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 12px;
     color: #3b82f6;
     word-break: break-all;
@@ -1669,6 +1870,8 @@ select:focus {
     padding: 8px 12px;
     border-radius: 6px;
     border: 1px solid #e5e7eb;
+    margin-left: 4px;
+    margin-right: 4px;
 }
 
 #share-summary {
@@ -1680,6 +1883,11 @@ select:focus {
     background: #f9fafb;
     border-radius: 8px;
     border: 1px solid #e5e7eb;
+    text-align: left;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: none;
+    white-space: normal;
 }
 
 #share-summary strong {
@@ -1691,7 +1899,7 @@ select:focus {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    padding: 20px 24px;
+    padding: 10px 14px;
     border-top: 1px solid #e5e7eb;
     background: #fafafa;
 }
@@ -1702,16 +1910,16 @@ select:focus {
     top: 20px;
     right: 20px;
     z-index: 1000;
-    max-width: 320px;
+    max-width: 260px;
 }
 
 .toast {
     background: #1a1a1a;
     color: white;
-    padding: 16px 20px;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 12px;
     font-weight: 500;
     animation: slideIn 0.3s ease;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
@@ -2222,8 +2430,6 @@ select:focus {
     color: #6b7280;
     font-style: italic;
     text-align: left;
-    padding-top: 8px;
-    border-top: 1px solid #e5e7eb;
 }
 
 /* PartnerWatch Details Tiles - Fresh CSS */
@@ -2253,7 +2459,6 @@ select:focus {
     flex: 1;
     text-align: left;
     margin-right: 8px;
-    max-width: 15ch; /* Approximately 20 characters */
 }
 
 .partnerwatch-tile-title a {
@@ -2264,10 +2469,7 @@ select:focus {
     line-height: 1.4;
     display: block;
     text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 15ch; /* Approximately 20 characters */
+    white-space: normal;
 }
 
 .partnerwatch-tile-title a:hover {
@@ -2326,8 +2528,6 @@ select:focus {
     color: #6b7280;
     font-style: italic;
     text-align: left;
-    padding-top: 8px;
-    border-top: 1px solid #e5e7eb;
 }
 
 /* Additional responsive and accessibility improvements */
@@ -2378,7 +2578,7 @@ select:focus-visible {
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 12px;
-    padding: 16px 20px;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2400,7 +2600,7 @@ select:focus-visible {
 }
 
 .subscription-name {
-    font-weight: 600;
+    font-weight: 400;
     font-size: 13px;
     color: #1a1a1a;
     display: flex;
@@ -2408,10 +2608,6 @@ select:focus-visible {
     gap: 8px;
 }
 
-.subscription-name::before {
-    content: "📌";
-    font-size: 12px;
-}
 
 .subscription-type {
     font-size: 11px;
@@ -2513,14 +2709,13 @@ select:focus-visible {
 }
 
 .subscription-actions .unsubscribe-btn {
-    background: #fef2f2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
+    background: none;
+    color: #6b7280;
+    border: none;
 }
 
 .subscription-actions .unsubscribe-btn:hover {
-    background: #fee2e2;
-    border-color: #fca5a5;
+    background: #f3f4f6;
     transform: translateY(-1px);
 }
 
@@ -2874,6 +3069,104 @@ select:focus-visible {
     font-size: 16px;
     color: #1a1a1a;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+/* Header button overrides */
+#support-btn, #settings-btn {
+    background: none !important;
+    border: none !important;
+    padding: 8px !important;
+}
+
+#support-btn:hover, #settings-btn:hover {
+    background: rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+}
+
+/* Topics header button overrides */
+#subscriptions-btn, #refresh-btn {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+#subscriptions-btn:hover, #refresh-btn:hover {
+    background: rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* Tile footer layouts */
+.regwatch-tile-footer, .partnerwatch-tile-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.regwatch-tile-footer .regwatch-tile-date,
+.partnerwatch-tile-footer .partnerwatch-tile-date {
+    flex: 1;
+    font-size: 10px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.regwatch-tile-footer .regwatch-tile-actions,
+.partnerwatch-tile-footer .partnerwatch-tile-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+/* Home screen tile footer layouts */
+.topic-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.topic-footer .topic-meta {
+    flex: 1;
+    font-size: 11px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.topic-footer .topic-actions,
+.topic-footer .partner-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+/* Share modal source link styling */
+.share-field #share-url {
+    color: #1f2937;
+    text-decoration: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.5;
+    font-size: 13px;
+    display: block;
+    margin: 8px 0 0 0;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    text-align: justify;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.share-field #share-url:hover {
+    color: #374151;
+    text-decoration: underline;
 }
 
 /* Reduced motion support */

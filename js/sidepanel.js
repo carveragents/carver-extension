@@ -5,6 +5,7 @@ class RegulatoryMonitorSidePanel {
         this.currentUser = null;
         this.currentScreen = 'loading';
         //this.apiHost = 'http://localhost:8000'; // Default to local development
+        //this.apiHost = 'https://staging.carveragents.ai'; // Default to staging
         this.apiHost = 'https://app.carveragents.ai'; // Default to production
         this.apiBaseUrl = `${this.apiHost}/api/v1`;
         this.cache = new Map();
@@ -88,6 +89,34 @@ class RegulatoryMonitorSidePanel {
         document.getElementById('cancel-partner-btn')?.addEventListener('click', () => this.hideAddPartnerModal());
         document.getElementById('save-partner-btn')?.addEventListener('click', () => this.handleSavePartner());
         document.getElementById('horizon-refresh-btn')?.addEventListener('click', () => this.refreshPartnerData());
+        
+        // Sentiment filter button and dropdown
+        document.getElementById('sentiment-filter-btn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleSentimentFilter();
+        });
+        
+        // Sentiment filter options
+        document.querySelectorAll('.filter-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const sentiment = e.target.getAttribute('data-sentiment');
+                this.applySentimentFilter(sentiment);
+            });
+        });
+        
+        // Close sentiment filter when clicking outside
+        document.addEventListener('click', () => {
+            this.closeSentimentFilter();
+        });
+        
+        // Initialize sentiment filter
+        this.currentSentimentFilter = 'all';
+        setTimeout(() => {
+            const allOption = document.querySelector('[data-sentiment="all"]');
+            if (allOption) {
+                allOption.classList.add('active');
+            }
+        }, 100);
         
         // Edit Partner Modal Event Listeners
         document.getElementById('close-edit-partner-modal')?.addEventListener('click', () => this.hideEditPartnerModal());
@@ -352,13 +381,22 @@ class RegulatoryMonitorSidePanel {
 
         emptyState.classList.add('hidden');
         
-        // Sort topics: subscribed first (green color), then by name
+        // Sort topics: subscribed first (green color), then by last updated date (latest first)
         const sortedSummaries = [...summaries].sort((a, b) => {
             const aSubscribed = a.color === '#10b981';
             const bSubscribed = b.color === '#10b981';
             
+            // Subscribed topics first
             if (aSubscribed && !bSubscribed) return -1;
             if (!aSubscribed && bSubscribed) return 1;
+            
+            // Within each group, sort by last updated date (latest first)
+            const aDate = a.last_updated ? new Date(a.last_updated).getTime() : 0;
+            const bDate = b.last_updated ? new Date(b.last_updated).getTime() : 0;
+            
+            if (aDate !== bDate) return bDate - aDate; // Latest first
+            
+            // If dates are equal, sort by name
             return a.tag_name.localeCompare(b.tag_name);
         });
         
@@ -366,28 +404,27 @@ class RegulatoryMonitorSidePanel {
             const isSubscribed = topic.color === '#10b981';
             return `
             <div class="topic-card" data-topic-id="${topic.tag_id}">
-                <div class="topic-header">
-                    <div class="topic-name">
-                        <div class="topic-color" style="background-color: ${topic.color}"></div>
-                        <span class="topic-title" title="${this.escapeHtml(topic.tag_name)}">${this.escapeHtml(this.truncateText(topic.tag_name, 30))}</span>
+                <div class="topic-name">
+                    <div class="topic-color" style="background-color: ${topic.color}"></div>
+                    <span class="topic-title" title="${this.escapeHtml(topic.tag_name)}">${this.escapeHtml(topic.tag_name)}</span>
+                </div>
+                <div class="topic-summary">
+${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
+                </div>
+                <div class="topic-footer">
+                    <div class="topic-meta" data-topic-id="${topic.tag_id}">
+                        <span class="sources-info">Loading...</span>
                     </div>
                     ${isSubscribed ? `
                     <div class="topic-actions">
                         <button class="unsubscribe-tile-btn" 
                                 data-topic-id="${topic.tag_id}" 
                                 data-topic-name="${this.escapeHtml(topic.tag_name)}"
-                                title="Unsubscribe from topic">
-                            ×
+                                title="Unsubscribe">
+                            <img src="icons/carver-icons/star_solid_unsubscribe_14x14.svg" alt="Unsubscribe" width="14" height="14">
                         </button>
                     </div>
-                    ` : ''}
-                </div>
-                <div class="topic-meta">
-                      <span>${topic.link_count} ${topic.link_count === 1 ? 'source' : 'sources'} 
-                      ${topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}</span>` : '<span>No recent updates</span>'}
-                </div>
-                <div class="topic-summary">
-${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
+                    ` : '<div class="topic-actions"></div>'}
                 </div>
             </div>
             `;
@@ -410,11 +447,46 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         container.querySelectorAll('.unsubscribe-tile-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const topicId = e.target.getAttribute('data-topic-id');
-                const topicName = e.target.getAttribute('data-topic-name');
+                const buttonElement = e.currentTarget;
+                const topicId = buttonElement.getAttribute('data-topic-id');
+                const topicName = buttonElement.getAttribute('data-topic-name');
                 this.showUnsubscribeConfirmModal(topicId, topicName, 'tile');
             });
         });
+
+        // Fetch actual feed entries counts for each topic
+        this.updateTopicSourcesCounts(sortedSummaries);
+    }
+
+    async updateTopicSourcesCounts(topics) {
+        // Update sources count for each topic by fetching details
+        for (const topic of topics) {
+            try {
+                const topicDetails = await this.apiCall(`/extension/topics/${topic.tag_id}/details`);
+                const feedEntries = topicDetails.feed_entries || [];
+                const sourcesCount = feedEntries.length;
+                
+                // Update the sources info in the UI
+                const topicMetaElement = document.querySelector(`.topic-meta[data-topic-id="${topic.tag_id}"] .sources-info`);
+                if (topicMetaElement) {
+                    if (sourcesCount > 0) {
+                        const lastUpdatedText = topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        topicMetaElement.innerHTML = `${sourcesCount} ${sourcesCount === 1 ? 'source' : 'sources'}${lastUpdatedText}`;
+                    } else {
+                        // Hide sources info when no data
+                        topicMetaElement.innerHTML = topic.last_updated ? `Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                    }
+                }
+            } catch (error) {
+                console.error(`Failed to fetch details for topic ${topic.tag_id}:`, error);
+                // Fall back to cached count
+                const topicMetaElement = document.querySelector(`.topic-meta[data-topic-id="${topic.tag_id}"] .sources-info`);
+                if (topicMetaElement) {
+                    const lastUpdatedText = topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                    topicMetaElement.innerHTML = `${topic.link_count || 0} ${(topic.link_count || 0) === 1 ? 'source' : 'sources'}${lastUpdatedText}`;
+                }
+            }
+        }
     }
 
     async showTopicDetails(topicId) {
@@ -502,26 +574,26 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
         container.innerHTML = sortedEntries.map(entry => `
             <div class="regwatch-tile" data-entry-id="${entry.entry_id}">
-                <div class="regwatch-tile-header">
-                    <div class="regwatch-tile-title">
-                        <a href="${entry.link}" target="_blank" rel="noopener noreferrer" title="${this.escapeHtml(entry.title)}">
-                            ${this.escapeHtml(this.truncateText(entry.title, 20))}
-                        </a>
-                    </div>
+                <div class="regwatch-tile-title">
+                    <a href="${entry.link}" target="_blank" rel="noopener noreferrer" title="${this.escapeHtml(entry.title)}">
+                        ${this.escapeHtml(this.extractTextFromHtml(entry.title))}
+                    </a>
+                </div>
+                <div class="regwatch-tile-summary">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
+                <div class="regwatch-tile-footer">
+                    ${!this.isEpochDate(entry.published_date) ? `<div class="regwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : '<div class="regwatch-tile-date"></div>'}
                     <div class="regwatch-tile-actions">
-                        <button class="regwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
-                            📤
+                        <button class="regwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(this.extractTextFromHtml(entry.title))}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
+                            <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="14" height="14">
                         </button>
                         <button class="regwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
-                            👥
+                            <img src="icons/carver-icons/member-list_ExtractEntity_14x14.svg" alt="Extract Names" width="14" height="14">
                         </button>
                         <button class="regwatch-action-btn disabled" disabled title="Extract Timelines (Coming Soon)">
-                            📅
+                            <img src="icons/carver-icons/time-fast_ExtractTimeline_14x14.svg" alt="Extract Timelines" width="14" height="14">
                         </button>
                     </div>
                 </div>
-                <div class="regwatch-tile-summary">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
-                ${!this.isEpochDate(entry.published_date) ? `<div class="regwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : ''}
             </div>
         `).join('');
         
@@ -533,10 +605,12 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         const actionButtons = container.querySelectorAll('.link-action[data-action], .link-action-icon[data-action], .regwatch-action-btn[data-action], .partnerwatch-action-btn[data-action]');
         actionButtons.forEach(button => {
             button.addEventListener('click', (e) => {
-                const action = e.target.getAttribute('data-action');
-                const entryId = e.target.getAttribute('data-entry-id');
-                const entryUrl = e.target.getAttribute('data-entry-url');
-                this.handleEntryAction(action, entryId, entryUrl, e.target);
+                // Use currentTarget to get the button element, not the clicked child (like img)
+                const buttonElement = e.currentTarget;
+                const action = buttonElement.getAttribute('data-action');
+                const entryId = buttonElement.getAttribute('data-entry-id');
+                const entryUrl = buttonElement.getAttribute('data-entry-url');
+                this.handleEntryAction(action, entryId, entryUrl, buttonElement);
             });
         });
     }
@@ -738,8 +812,19 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             return;
         }
         
+        // Sort keywords by last updated date (latest first)
+        const sortedKeywords = [...keywords].sort((a, b) => {
+            const aDate = a.last_updated ? new Date(a.last_updated).getTime() : 0;
+            const bDate = b.last_updated ? new Date(b.last_updated).getTime() : 0;
+            
+            if (aDate !== bDate) return bDate - aDate; // Latest first
+            
+            // If dates are equal, sort by keyword name
+            return a.keyword.localeCompare(b.keyword);
+        });
+        
         container.innerHTML = `
-            ${keywords.map((keyword, index) => {
+            ${sortedKeywords.map((keyword, index) => {
                 // Use summary level sentiment from API response
                 const aggregatedSentiment = keyword.sentiment || 'neutral';
                 const sentimentDot = this.renderSentimentDot(aggregatedSentiment);
@@ -750,27 +835,27 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 
                 return `
                     <div class="topic-card partner-card" data-keyword-id="${keyword.keyword_id}" data-kind="${keyword.kind}">
-                        <div class="topic-header">
-                            <div class="topic-name">
-                                <span class="topic-title" title="${this.escapeHtml(keyword.keyword)}">${this.escapeHtml(this.truncateText(keyword.keyword, 30))}</span>
-                            </div>
-                            <div class="partner-actions">
-                                <button class="btn btn-small btn-secondary edit-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" data-keyword-frequency="${keyword.frequency || 'daily'}" title="Edit Partner">
-                                    ✎
-                                </button>
-                                <button class="btn btn-small btn-secondary delete-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" title="Delete Partner">
-                                    ✕
-                                </button>
-                            </div>
-                        </div>
-                        <div class="topic-meta">
-<span>${keyword.sources_count || 0} sources${keyword.last_updated ? `, Updated ${this.formatActualDate(keyword.last_updated)}` : ', No recent updates'}</span>
+                        <div class="topic-name">
+                            <span class="topic-title" title="${this.escapeHtml(keyword.keyword)}">${this.escapeHtml(keyword.keyword)}</span>
                         </div>
                         <div class="partner-sentiment">
                             <span>Sentiment: ${this.capitalize(aggregatedSentiment)}</span>
                         </div>
                         <div class="topic-summary">
                             ${this.escapeHtml(truncatedSummary)}
+                        </div>
+                        <div class="topic-footer">
+                            <div class="topic-meta">
+<span>${keyword.sources_count || 0} sources${keyword.last_updated ? `, Updated ${this.formatActualDate(keyword.last_updated)}` : ''}</span>
+                            </div>
+                            <div class="partner-actions">
+                                <button class="btn btn-small btn-secondary edit-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" data-keyword-frequency="${keyword.frequency || 'daily'}" title="Edit Partner">
+                                    <img src="icons/carver-icons/user-pen_EditPartner_14x14.svg" alt="Edit" width="14" height="14">
+                                </button>
+                                <button class="btn btn-small btn-secondary delete-partner" data-keyword-id="${keyword.keyword_id}" data-keyword-name="${this.escapeHtml(keyword.keyword)}" title="Delete Partner">
+                                    <img src="icons/carver-icons/delete-user_DeletePartner_14x14.svg" alt="Delete" width="14" height="14">
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -793,9 +878,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         container.querySelectorAll('.edit-partner').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const keywordId = e.target.getAttribute('data-keyword-id');
-                const keywordName = e.target.getAttribute('data-keyword-name');
-                const frequency = e.target.getAttribute('data-keyword-frequency');
+                const buttonElement = e.currentTarget;
+                const keywordId = buttonElement.getAttribute('data-keyword-id');
+                const keywordName = buttonElement.getAttribute('data-keyword-name');
+                const frequency = buttonElement.getAttribute('data-keyword-frequency');
                 this.showEditPartnerModal(keywordId, keywordName, frequency);
             });
         });
@@ -803,8 +889,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         container.querySelectorAll('.delete-partner').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const keywordId = e.target.getAttribute('data-keyword-id');
-                const keywordName = e.target.getAttribute('data-keyword-name');
+                const buttonElement = e.currentTarget;
+                const keywordId = buttonElement.getAttribute('data-keyword-id');
+                const keywordName = buttonElement.getAttribute('data-keyword-name');
                 this.confirmDeletePartner(keywordId, keywordName);
             });
         });
@@ -917,7 +1004,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 method: 'DELETE'
             });
             
-            this.showToast('Successfully unsubscribed from topic!', 'success');
+            this.showToast('Successfully unsubscribed from institute!', 'success');
             
             // Refresh regulatory data to show updated subscription status
             this.cache.clear();
@@ -927,8 +1014,8 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             this.showScreen('main-dashboard');
             
         } catch (error) {
-            console.error('Failed to unsubscribe from topic:', error);
-            this.showToast('Failed to unsubscribe from topic. Please try again.', 'error');
+            console.error('Failed to unsubscribe:', error);
+            this.showToast('Failed to unsubscribe. Please try again.', 'error');
         }
     }
 
@@ -1194,6 +1281,20 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         return text.replace(/[&<>"']/g, (m) => map[m]);
     }
 
+    extractTextFromHtml(html) {
+        if (!html) return '';
+        
+        // Create a temporary DOM element to parse the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        // Extract just the text content, which will strip all HTML tags
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        
+        // Clean up any extra whitespace
+        return textContent.trim();
+    }
+
     cleanSummaryText(text) {
         if (!text) return '';
         
@@ -1337,18 +1438,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
     formatDate(dateString) {
         try {
-            const date = new Date(dateString);
-            const now = new Date();
-            const diffTime = Math.abs(now - date);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            if (diffDays === 1) return 'Today';
-            if (diffDays === 2) return 'Yesterday';
-            if (diffDays <= 7) return `${diffDays - 1} days ago`;
-            
-            return date.toLocaleDateString();
+            return this.formatDateStandard(dateString);
         } catch (error) {
-            return 'Unknown date';
+            return '';
         }
     }
 
@@ -1367,33 +1459,34 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             if (this.isEpochDate(dateString)) {
                 return '';
             }
-            const date = new Date(dateString);
-            const day = date.getDate();
-            const suffix = this.getOrdinalSuffix(day);
-            const month = date.toLocaleDateString('en-US', { month: 'short' });
-            const year = date.getFullYear();
-            return `${month} ${day}${suffix}, ${year}`;
+            return this.formatDateStandard(dateString);
         } catch (error) {
             return '';
         }
     }
 
-    getOrdinalSuffix(day) {
-        if (day > 3 && day < 21) return 'th';
-        switch (day % 10) {
-            case 1: return 'st';
-            case 2: return 'nd';
-            case 3: return 'rd';
-            default: return 'th';
+    formatDateStandard(dateString) {
+        try {
+            if (this.isEpochDate(dateString)) {
+                return '';
+            }
+            const date = new Date(dateString);
+            const day = date.getDate();
+            const month = date.toLocaleDateString('en-US', { month: 'short' });
+            const year = date.getFullYear();
+            return `${day}${month}${year}`;
+        } catch (error) {
+            return '';
         }
     }
 
+    // Removed getOrdinalSuffix - no longer needed with new date format
+
     formatDateTime(dateString) {
         try {
-            const date = new Date(dateString);
-            return date.toLocaleString();
+            return this.formatDateStandard(dateString);
         } catch (error) {
-            return 'Unknown date';
+            return '';
         }
     }
 
@@ -1409,7 +1502,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             <div class="link-item" data-entry-id="${entry.entry_id}">
                 <div class="link-title">
                     <a href="${entry.link}" target="_blank" rel="noopener noreferrer" class="link-title-text">
-                        ${this.escapeHtml(this.truncateText(entry.title, 80))}
+                        ${this.escapeHtml(this.truncateText(this.extractTextFromHtml(entry.title), 80))}
                     </a>
                 </div>
                 <div class="entry-sentiment">
@@ -1417,7 +1510,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 </div>
                 <div class="link-summary-text">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
                 <div class="link-actions">
-                    <button class="link-action" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}">
+                    <button class="link-action" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(this.extractTextFromHtml(entry.title))}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}">
                         ${this.getActionLabel('share_summary')}
                     </button>
                     <button class="link-action disabled" disabled title="Coming Soon">
@@ -1467,10 +1560,11 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         const actionButtons = container.querySelectorAll('.action-btn[data-action]');
         actionButtons.forEach(button => {
             button.addEventListener('click', (e) => {
-                const action = e.target.getAttribute('data-action');
-                const summaryId = e.target.getAttribute('data-summary-id');
-                const sourceUrl = e.target.getAttribute('data-source-url');
-                this.handleSummaryAction(action, summaryId, sourceUrl, e.target);
+                const buttonElement = e.currentTarget;
+                const action = buttonElement.getAttribute('data-action');
+                const summaryId = buttonElement.getAttribute('data-summary-id');
+                const sourceUrl = buttonElement.getAttribute('data-source-url');
+                this.handleSummaryAction(action, summaryId, sourceUrl, buttonElement);
             });
         });
     }
@@ -1594,11 +1688,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             <div class="subscription-item">
                 <div class="subscription-info">
                     <div class="subscription-name">${this.escapeHtml(sub.name || sub.topic_name || sub.subscription_name)}</div>
-                    <div class="subscription-description">${this.escapeHtml(sub.description || '')}</div>
                 </div>
                 <div class="subscription-actions">
-                    <button class="btn btn-small btn-danger unsubscribe-btn" data-topic-id="${sub.id}">
-                        Unsubscribe
+                    <button class="btn btn-small btn-danger unsubscribe-btn" data-topic-id="${sub.id}" data-topic-name="${this.escapeHtml(sub.name || sub.topic_name || sub.subscription_name)}">
+                        <img src="icons/carver-icons/star_solid_unsubscribe_14x14.svg" alt="Unsubscribe" width="14" height="14">
                     </button>
                 </div>
             </div>
@@ -1607,38 +1700,15 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         // Add event listeners
         container.querySelectorAll('.unsubscribe-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const topicId = e.target.getAttribute('data-topic-id');
-                this.unsubscribeFromTopicInList(topicId);
+                const buttonElement = e.currentTarget;
+                const topicId = buttonElement.getAttribute('data-topic-id');
+                const topicName = buttonElement.getAttribute('data-topic-name');
+                this.showUnsubscribeConfirmModal(topicId, topicName, 'list');
             });
         });
     }
 
-    async unsubscribeFromTopicInList(topicId) {
-        try {
-            const userId = this.getUserId();
-            if (!userId) {
-                this.showToast('User information not available', 'error');
-                return;
-            }
-
-            console.log(`Unsubscribing from topic ${topicId} for user ${userId} (from list)`);
-            await this.apiCall(`/core/users/${userId}/topics/${topicId}/unsubscribe`, {
-                method: 'DELETE'
-            });
-            
-            this.showToast('Successfully unsubscribed from topic!', 'success');
-            
-            // Refresh the subscriptions list
-            await this.showSubscriptions();
-            
-            // Clear cache and refresh regulatory data to update subscription indicators
-            this.cache.clear();
-            
-        } catch (error) {
-            console.error('Failed to unsubscribe from topic:', error);
-            this.showToast('Failed to unsubscribe. Please try again.', 'error');
-        }
-    }
+    // Removed unsubscribeFromTopicInList - now using confirmation modal for all unsubscribe actions
 
     // Legacy method - keeping for compatibility but updating to use new API
     async unsubscribe(subscriptionId) {
@@ -1742,9 +1812,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                     <button class="search-subscribe-btn" 
                             data-topic-id="${topic.tag_id}" 
                             data-topic-name="${this.escapeHtml(topic.tag_name)}"
-                            style="background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px; color: ${isSubscribed ? '#10b981' : '#6b7280'};"
-                            title="${isSubscribed ? 'Unsubscribe from topic' : 'Subscribe to topic'}">
-                        ${isSubscribed ? '★' : '☆'}
+                            data-subscribed="${isSubscribed}"
+                            style="background: none; border: none; cursor: pointer; padding: 4px;"
+                            title="${isSubscribed ? 'Unsubscribe' : 'Subscribe'}">
+                        <img src="icons/carver-icons/${isSubscribed ? 'star_solid_unsubscribe_14x14.svg' : 'star_subscribe_14x14.svg'}" alt="${isSubscribed ? 'Unsubscribe' : 'Subscribe'}" width="14" height="14">
                     </button>
                 </div>
                 <div class="search-result-description">
@@ -1761,9 +1832,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 console.log('Subscribe button clicked!');
-                const topicId = e.target.getAttribute('data-topic-id');
-                const topicName = e.target.getAttribute('data-topic-name');
-                const isSubscribed = e.target.textContent.trim() === '★';
+                const buttonElement = e.currentTarget;
+                const topicId = buttonElement.getAttribute('data-topic-id');
+                const topicName = buttonElement.getAttribute('data-topic-name');
+                const isSubscribed = buttonElement.getAttribute('data-subscribed') === 'true';
                 
                 console.log('Topic:', topicName, 'isSubscribed:', isSubscribed);
                 
@@ -2115,8 +2187,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                     <button class="topic-suggestion-subscribe-btn" 
                             data-topic-id="${topic.tag_id}" 
                             data-topic-name="${this.escapeHtml(topic.tag_name)}"
-                            title="${isSubscribed ? 'Unsubscribe from topic' : 'Subscribe to topic'}">
-                        ${isSubscribed ? '★' : '☆'}
+                            data-subscribed="${isSubscribed}"
+                            title="${isSubscribed ? 'Unsubscribe' : 'Subscribe'}">
+                        <img src="icons/carver-icons/${isSubscribed ? 'star_solid_unsubscribe_14x14.svg' : 'star_subscribe_14x14.svg'}" alt="${isSubscribed ? 'Unsubscribe' : 'Subscribe'}" width="14" height="14">
                     </button>
                 </div>
             `;
@@ -2133,7 +2206,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 // Check if user is subscribed to this topic
                 const topicId = e.currentTarget.getAttribute('data-topic-id');
                 const subscribeBtn = e.currentTarget.querySelector('.topic-suggestion-subscribe-btn');
-                const isSubscribed = subscribeBtn && subscribeBtn.textContent.trim() === '★';
+                const isSubscribed = subscribeBtn && subscribeBtn.getAttribute('data-subscribed') === 'true';
                 
                 if (!isSubscribed) {
                     // Show a message that they need to subscribe first
@@ -2150,9 +2223,10 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         suggestionsContainer.querySelectorAll('.topic-suggestion-subscribe-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                const topicId = e.target.getAttribute('data-topic-id');
-                const topicName = e.target.getAttribute('data-topic-name');
-                const isCurrentlySubscribed = e.target.textContent.trim() === '★';
+                const buttonElement = e.currentTarget;
+                const topicId = buttonElement.getAttribute('data-topic-id');
+                const topicName = buttonElement.getAttribute('data-topic-name');
+                const isCurrentlySubscribed = buttonElement.getAttribute('data-subscribed') === 'true';
                 
                 if (isCurrentlySubscribed) {
                     this.showUnsubscribeConfirmModal(topicId, topicName, 'suggestions');
@@ -2209,14 +2283,19 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             
             this.showToast(`Successfully subscribed to "${topicName}"!`, 'success');
             
-            // Refresh the suggestions to show updated subscription status
-            const searchInput = document.getElementById('topics-search-input');
-            const currentValue = searchInput ? searchInput.value.trim() : '';
-            await this.handleTopicsSearch(currentValue);
+            // Hide suggestions dropdown
+            this.hideTopicsSuggestions();
             
-            // Refresh main regulatory data to show updated subscription status
-            this.cache.clear();
-            await this.loadRegulatoryData();
+            // Show loading indicator on main dashboard
+            this.showMainDashboardLoading();
+            
+            try {
+                // Refresh main regulatory data to show updated subscription status
+                this.cache.clear();
+                await this.loadRegulatoryData();
+            } finally {
+                this.hideMainDashboardLoading();
+            }
             
         } catch (error) {
             console.error('Failed to subscribe to topic:', error);
@@ -2233,6 +2312,23 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             const keywordDetails = await this.apiCall(`/extension/horizon/keywords/${keywordId}/details`);
             
             console.log('Partner details received:', keywordDetails);
+            
+            // Debug: Check feed entries and their dates
+            if (keywordDetails.feed_entries && keywordDetails.feed_entries.length > 0) {
+                console.log('Feed entries found:', keywordDetails.feed_entries.length);
+                keywordDetails.feed_entries.forEach((entry, index) => {
+                    console.log(`Entry ${index + 1}:`, {
+                        title: entry.title,
+                        published_date: entry.published_date,
+                        published_date_type: typeof entry.published_date,
+                        formatted_date: this.formatActualDate(entry.published_date),
+                        is_epoch: this.isEpochDate(entry.published_date),
+                        entry_id: entry.entry_id
+                    });
+                });
+            } else {
+                console.log('No feed entries found in partner details');
+            }
             
             // Validate response
             if (!keywordDetails || !keywordDetails.topic_name) {
@@ -2304,8 +2400,38 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             return;
         }
 
-        // Sort entries by published date (latest first)
-        const sortedEntries = [...feedEntries].sort((a, b) => {
+        // Debug: Check feed entries and their dates for partner screen
+        console.log('Partner screen - Feed entries:', feedEntries.length);
+        feedEntries.forEach((entry, index) => {
+            console.log(`Partner Screen Entry ${index + 1}:`, {
+                title: entry.title?.substring(0, 50) + '...',
+                published_date: entry.published_date,
+                published_date_type: typeof entry.published_date,
+                formatted_date: this.formatActualDate(entry.published_date),
+                is_epoch: this.isEpochDate(entry.published_date)
+            });
+        });
+
+        // Remove duplicate entries based on "link" key (primary method)
+        const uniqueEntries = feedEntries.filter((entry, index, arr) => {
+            // Primary deduplication: by link URL (most reliable for RSS feeds)
+            if (entry.link) {
+                return arr.findIndex(e => e.link === entry.link) === index;
+            }
+            
+            // Fallback deduplication: by title if no link
+            if (entry.title) {
+                return arr.findIndex(e => e.title === entry.title) === index;
+            }
+            
+            // Last resort: keep entry if no link or title (shouldn't happen)
+            return true;
+        });
+
+        console.log(`Partner screen - Removed ${feedEntries.length - uniqueEntries.length} duplicate entries`);
+
+        // Sort unique entries by published date (latest first)
+        const sortedEntries = [...uniqueEntries].sort((a, b) => {
             const dateA = new Date(a.published_date);
             const dateB = new Date(b.published_date);
             return dateB - dateA;
@@ -2313,29 +2439,29 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
         container.innerHTML = sortedEntries.map(entry => `
             <div class="partnerwatch-tile" data-entry-id="${entry.entry_id}">
-                <div class="partnerwatch-tile-header">
-                    <div class="partnerwatch-tile-title">
-                        <a href="${entry.link}" target="_blank" rel="noopener noreferrer" title="${this.escapeHtml(entry.title)}">
-                            ${this.escapeHtml(this.truncateText(entry.title, 20))}
-                        </a>
-                    </div>
-                    <div class="partnerwatch-tile-actions">
-                        <button class="partnerwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(entry.title)}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
-                            📤
-                        </button>
-                        <button class="partnerwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
-                            👥
-                        </button>
-                        <button class="partnerwatch-action-btn disabled" disabled title="Extract Timelines (Coming Soon)">
-                            📅
-                        </button>
-                    </div>
+                <div class="partnerwatch-tile-title">
+                    <a href="${entry.link}" target="_blank" rel="noopener noreferrer" title="${this.escapeHtml(entry.title)}">
+                        ${this.escapeHtml(this.extractTextFromHtml(entry.title))}
+                    </a>
                 </div>
                 <div class="partnerwatch-tile-sentiment">
                     <span>Sentiment: ${this.capitalize(entry.sentiment || 'neutral')}</span>
                 </div>
                 <div class="partnerwatch-tile-summary">${this.escapeHtml(entry.one_line_summary || entry.content_preview || 'No summary available')}</div>
-                ${!this.isEpochDate(entry.published_date) ? `<div class="partnerwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : ''}
+                <div class="partnerwatch-tile-footer">
+                    ${!this.isEpochDate(entry.published_date) ? `<div class="partnerwatch-tile-date">Published on: ${this.formatActualDate(entry.published_date)}</div>` : '<div class="partnerwatch-tile-date"></div>'}
+                    <div class="partnerwatch-tile-actions">
+                        <button class="partnerwatch-action-btn" data-action="share_summary" data-entry-id="${entry.entry_id}" data-entry-url="${this.escapeHtml(entry.link)}" data-entry-title="${this.escapeHtml(this.extractTextFromHtml(entry.title))}" data-entry-summary="${this.escapeHtml(entry.one_line_summary || entry.content_preview || '')}" data-entry-five-point="${this.escapeHtml(entry.five_point_summary || '')}" title="Share Summary">
+                            <img src="icons/carver-icons/share_18x18.svg" alt="Share" width="14" height="14">
+                        </button>
+                        <button class="partnerwatch-action-btn disabled" disabled title="Extract Names (Coming Soon)">
+                            <img src="icons/carver-icons/member-list_ExtractEntity_14x14.svg" alt="Extract Names" width="14" height="14">
+                        </button>
+                        <button class="partnerwatch-action-btn disabled" disabled title="Extract Timelines (Coming Soon)">
+                            <img src="icons/carver-icons/time-fast_ExtractTimeline_14x14.svg" alt="Extract Timelines" width="14" height="14">
+                        </button>
+                    </div>
+                </div>
             </div>
         `).join('');
         
@@ -2509,7 +2635,31 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     formatShareSummary(summary) {
         if (!summary) return '';
         
+        // DEBUG: Log the original summary with character codes
+        console.log('=== DEBUG formatShareSummary ===');
+        console.log('Original summary:', summary);
+        console.log('Original summary length:', summary.length);
+        console.log('Original summary char codes:', summary.split('').map((char, i) => `${i}: "${char}" (${char.charCodeAt(0)})`));
+        
         let formattedSummary = summary;
+        
+        // Clean up unwanted line breaks and whitespace first
+        // Replace all types of line breaks (including \r\n, \r, \n) that are not part of proper formatting
+        formattedSummary = formattedSummary
+            // First, normalize all line endings to \n
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n')
+            // Remove single newlines that are not followed by numbered points or bullets
+            .replace(/\n(?!\s*\d+\.\s|^\s*[•\-\*]\s)/g, ' ')
+            // Clean up multiple whitespace characters
+            .replace(/\s+/g, ' ')
+            // Trim the result
+            .trim();
+            
+        // DEBUG: Log the processed summary
+        console.log('Processed summary:', formattedSummary);
+        console.log('Processed summary length:', formattedSummary.length);
+        console.log('Processed summary char codes:', formattedSummary.split('').map((char, i) => `${i}: "${char}" (${char.charCodeAt(0)})`));
         
         // Check if the summary already has numbered points (1. 2. 3. etc.)
         const hasNumberedPoints = /^\d+\.\s+/m.test(formattedSummary);
@@ -2539,12 +2689,17 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             formattedSummary = formattedSummary.replace(/\.(\s+)([A-Z])/g, '.<br/><br/>$2');
         }
         
-        // Highlight key terms (simple approach - can be enhanced)
-        const keywords = ['regulatory', 'compliance', 'bank', 'financial', 'policy', 'requirement', 'guideline', 'framework', 'announcement', 'update'];
-        keywords.forEach(keyword => {
-            const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
-            formattedSummary = formattedSummary.replace(regex, '<strong>$1</strong>');
-        });
+        // Keyword highlighting disabled to avoid rendering issues
+        // const keywords = ['regulatory', 'compliance', 'bank', 'financial', 'policy', 'requirement', 'guideline', 'framework', 'announcement', 'update'];
+        // keywords.forEach(keyword => {
+        //     const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
+        //     formattedSummary = formattedSummary.replace(regex, '<strong>$1</strong>');
+        // });
+        
+        // DEBUG: Log the final formatted result
+        console.log('Final formatted summary:', formattedSummary);
+        console.log('Final formatted summary HTML:', formattedSummary.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+        console.log('=== END DEBUG ===');
         
         return formattedSummary;
     }
@@ -2552,7 +2707,11 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     showShareSummaryModal(title, url, summary) {
         // Populate modal content
         document.getElementById('share-title').textContent = title;
-        document.getElementById('share-url').textContent = url;
+        
+        // Set the URL as both the href and text content of the link
+        const urlElement = document.getElementById('share-url');
+        urlElement.href = url;
+        urlElement.textContent = url;
         
         // Format and display summary with HTML
         const summaryElement = document.getElementById('share-summary');
@@ -2607,7 +2766,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         
         // Populate modal content
         document.getElementById('overall-topic-summary-title').textContent = title;
-        document.getElementById('overall-topic-summary-text').textContent = summary;
+        document.getElementById('overall-topic-summary-text').innerHTML = this.formatShareSummary(summary);
         
         // Show modal
         const modal = document.getElementById('overall-topic-summary-modal');
@@ -2621,13 +2780,14 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
     async copyTopicSummary() {
         const title = document.getElementById('overall-topic-summary-title').textContent;
-        const summary = document.getElementById('overall-topic-summary-text').textContent;
+        const summaryElement = document.getElementById('overall-topic-summary-text');
+        const summary = summaryElement.textContent || summaryElement.innerText;
         
         const textToCopy = `${title}\n\n${summary}\n\nGenerated on: https://carveragents.ai`;
         
         try {
             await navigator.clipboard.writeText(textToCopy);
-            this.showToast('Topic summary copied to clipboard!', 'success');
+            this.showToast('Institute summary copied to clipboard!', 'success');
             this.hideTopicSummaryModal();
         } catch (error) {
             console.error('Failed to copy to clipboard:', error);
@@ -2650,7 +2810,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         
         // Populate modal content
         document.getElementById('overall-partner-summary-title').textContent = title;
-        document.getElementById('overall-partner-summary-text').textContent = summary;
+        document.getElementById('overall-partner-summary-text').innerHTML = this.formatShareSummary(summary);
         
         // Show modal
         const modal = document.getElementById('overall-partner-summary-modal');
@@ -2664,7 +2824,8 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
     async copyPartnerSummary() {
         const title = document.getElementById('overall-partner-summary-title').textContent;
-        const summary = document.getElementById('overall-partner-summary-text').textContent;
+        const summaryElement = document.getElementById('overall-partner-summary-text');
+        const summary = summaryElement.textContent || summaryElement.innerText;
         
         const textToCopy = `${title}\n\n${summary}\n\nGenerated on: https://carveragents.ai`;
         
@@ -2759,20 +2920,18 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             
             this.showToast(`Successfully subscribed to "${topicName}"!`, 'success');
             
-            // Update button state immediately for responsive feel
-            const button = document.querySelector(`[data-topic-id="${topicId}"]`);
-            if (button) {
-                button.textContent = '★';
-                button.style.color = '#10b981';
-                button.setAttribute('title', 'Unsubscribe from topic');
-            }
+            // Close search results and return to main dashboard
+            this.showScreen('main-dashboard');
             
-            // Show loading indicator and refresh the search results
-            this.showSearchRefreshLoading();
+            // Show loading indicator on main dashboard
+            this.showMainDashboardLoading();
+            
             try {
-                await this.refreshAfterSubscriptionChange('search');
+                // Clear cache and refresh main regulatory data to show new subscription
+                this.cache.clear();
+                await this.loadRegulatoryData();
             } finally {
-                this.hideSearchRefreshLoading();
+                this.hideMainDashboardLoading();
             }
             
         } catch (error) {
@@ -2832,21 +2991,66 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         }
     }
 
+    showMainDashboardLoading() {
+        const container = document.getElementById('tag-summaries');
+        if (container) {
+            // Add loading overlay to main dashboard content
+            const overlay = document.createElement('div');
+            overlay.id = 'main-dashboard-loading';
+            overlay.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(255, 255, 255, 0.9);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                border-radius: 8px;
+                min-height: 200px;
+            `;
+            overlay.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                    <div style="width: 32px; height: 32px; border: 3px solid #e5e7eb; border-top: 3px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <span style="font-size: 14px; color: #6b7280; font-weight: 500;">Updating subscriptions...</span>
+                </div>
+            `;
+            
+            // Ensure CSS animation exists
+            if (!document.getElementById('search-loading-styles')) {
+                const style = document.createElement('style');
+                style.id = 'search-loading-styles';
+                style.textContent = `
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            container.style.position = 'relative';
+            container.appendChild(overlay);
+        }
+    }
+
+    hideMainDashboardLoading() {
+        const overlay = document.getElementById('main-dashboard-loading');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+
     async refreshAfterSubscriptionChange(source) {
         // Clear cache to force fresh data
         this.cache.clear();
         
         if (source === 'search') {
-            // Refresh search results
-            const searchInput = document.getElementById('search-input');
-            const query = searchInput?.value?.trim() || '';
-            if (query) {
-                await this.handleSearchScreenSearch();
-            } else {
-                // Show recommendations
-                const results = await this.apiCall('/extension/topics/recommendations');
-                this.renderSearchResults(results, true);
-            }
+            // Close search results and go back to main dashboard
+            this.showScreen('main-dashboard');
+            await this.loadRegulatoryData();
         } else if (source === 'suggestions') {
             // Refresh topics suggestions
             const searchInput = document.getElementById('topics-search-input');
@@ -2854,6 +3058,12 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             await this.handleTopicsSearch(currentValue);
             
             // Refresh main dashboard
+            await this.loadRegulatoryData();
+        } else if (source === 'list') {
+            // Refresh My Subscriptions page
+            await this.showSubscriptions();
+            
+            // Also refresh main dashboard for consistency
             await this.loadRegulatoryData();
         } else {
             // Refresh main dashboard
@@ -3101,6 +3311,63 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             console.error('Failed to delete partner:', error);
             this.showToast('Failed to delete partner. Please try again.', 'error');
         }
+    }
+
+    // Sentiment Filter Methods
+    toggleSentimentFilter() {
+        const dropdown = document.getElementById('sentiment-filter-dropdown');
+        if (dropdown) {
+            dropdown.classList.toggle('hidden');
+        }
+    }
+
+    closeSentimentFilter() {
+        const dropdown = document.getElementById('sentiment-filter-dropdown');
+        if (dropdown && !dropdown.classList.contains('hidden')) {
+            dropdown.classList.add('hidden');
+        }
+    }
+
+    applySentimentFilter(selectedSentiment) {
+        // Update active filter option
+        document.querySelectorAll('.filter-option').forEach(option => {
+            option.classList.remove('active');
+        });
+        document.querySelector(`[data-sentiment="${selectedSentiment}"]`).classList.add('active');
+
+        // Store current filter
+        this.currentSentimentFilter = selectedSentiment;
+
+        // Filter the partner tiles
+        this.filterPartnerTilesBySentiment(selectedSentiment);
+
+        // Close the dropdown
+        this.closeSentimentFilter();
+    }
+
+    filterPartnerTilesBySentiment(sentiment) {
+        const partnerCards = document.querySelectorAll('.partner-card');
+        
+        partnerCards.forEach(card => {
+            if (sentiment === 'all') {
+                card.style.display = 'block';
+            } else {
+                const sentimentElement = card.querySelector('.partner-sentiment span');
+                if (sentimentElement) {
+                    const cardSentiment = sentimentElement.textContent.replace('Sentiment: ', '').toLowerCase();
+                    if (cardSentiment === sentiment.toLowerCase()) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                } else {
+                    // If no sentiment info, hide when filtering (unless "all")
+                    card.style.display = 'none';
+                }
+            }
+        });
+        
+        console.log(`Filtered partner cards by sentiment: ${sentiment}`);
     }
 }
 

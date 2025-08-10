@@ -103,10 +103,17 @@
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 24px !important;
-    height: 24px !important;
+    width: 32px !important;
+    height: 32px !important;
     margin: 0 !important;
     padding: 0 !important;
+}
+
+.carver-extension-root .rm-floating-button .rm-btn-icon img {
+    display: block !important;
+    margin: 0 auto !important;
+    vertical-align: middle !important;
+    object-fit: contain !important;
 }
 
 .carver-extension-root .rm-floating-button:hover .rm-btn-icon {
