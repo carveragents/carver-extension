@@ -473,9 +473,17 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     async updateTopicSourcesCounts(topics) {
         // Update sources count for each topic by fetching details
         for (const topic of topics) {
+            const topicMetaElement = document.querySelector(`.topic-meta[data-topic-id="${topic.tag_id}"] .sources-info`);
+            
             try {
                 const topicDetails = await this.apiCall(`/extension/topics/${topic.tag_id}/details`);
-                const feedEntries = topicDetails.feed_entries || [];
+                
+                // Check if we have valid feed entries
+                if (!topicDetails || !topicDetails.feed_entries || !Array.isArray(topicDetails.feed_entries)) {
+                    throw new Error('No valid feed entries found');
+                }
+                
+                const feedEntries = topicDetails.feed_entries;
                 
                 // Deduplicate entries based on link (same logic as renderFeedEntries)
                 const uniqueEntries = feedEntries.filter((entry, index, arr) => {
@@ -510,25 +518,38 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 const sourcesCount = uniqueSources.size;
                 
                 // Update the sources info in the UI
-                const topicMetaElement = document.querySelector(`.topic-meta[data-topic-id="${topic.tag_id}"] .sources-info`);
                 if (topicMetaElement) {
                     if (entriesCount > 0) {
-                        const entryText = `${entriesCount} ${entriesCount === 1 ? 'entry' : 'entries'}`;
-                        const sourceText = `${sourcesCount} ${sourcesCount === 1 ? 'source' : 'sources'}`;
+                        const sourceText = `${entriesCount} ${entriesCount === 1 ? 'source' : 'sources'}`;
                         const lastUpdatedText = topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}` : '';
-                        topicMetaElement.innerHTML = `${entryText} from ${sourceText}${lastUpdatedText}`;
+                        topicMetaElement.innerHTML = `${sourceText}${lastUpdatedText}`;
                     } else {
-                        // Hide sources info when no data
-                        topicMetaElement.innerHTML = topic.last_updated ? `Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        // Show no entries available
+                        const lastUpdatedText = topic.last_updated ? `Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        topicMetaElement.innerHTML = lastUpdatedText || 'No entries yet';
                     }
                 }
             } catch (error) {
-                console.error(`Failed to fetch details for topic ${topic.tag_id}:`, error);
-                // Fall back to cached count
-                const topicMetaElement = document.querySelector(`.topic-meta[data-topic-id="${topic.tag_id}"] .sources-info`);
-                if (topicMetaElement) {
-                    const lastUpdatedText = topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}` : '';
-                    topicMetaElement.innerHTML = `${topic.link_count || 0} ${(topic.link_count || 0) === 1 ? 'source' : 'sources'}${lastUpdatedText}`;
+                // Silently handle HTTP 500 errors and other API issues
+                if (error.message.includes('HTTP 500') || error.message.includes('HTTP 404')) {
+                    // For server errors, show fallback info without logging error
+                    if (topicMetaElement) {
+                        const lastUpdatedText = topic.last_updated ? `Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        topicMetaElement.innerHTML = lastUpdatedText || 'Data unavailable';
+                    }
+                } else {
+                    // For other errors, log but still show fallback
+                    console.warn(`Could not fetch details for topic ${topic.tag_name || topic.tag_id}:`, error.message);
+                    if (topicMetaElement) {
+                        const fallbackCount = topic.link_count || 0;
+                        const lastUpdatedText = topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        
+                        if (fallbackCount > 0) {
+                            topicMetaElement.innerHTML = `${fallbackCount} ${fallbackCount === 1 ? 'source' : 'sources'}${lastUpdatedText}`;
+                        } else {
+                            topicMetaElement.innerHTML = lastUpdatedText || 'No data available';
+                        }
+                    }
                 }
             }
         }
