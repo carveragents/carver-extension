@@ -40,7 +40,6 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
-  "privacy_policy": "https://carveragents.ai/privacy-policy",
   "web_accessible_resources": [
     {
       "resources": ["icons/*", "icons/carver-icons/*", "styles/*"],
