@@ -163,8 +163,21 @@ class RegulatoryMonitorFloatingButton {
 
         // Listen for messages from background script
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            if (message.action === 'toggleSidePanel') {
-                this.openSidePanel();
+            try {
+                if (message.action === 'toggleSidePanel') {
+                    this.openSidePanel();
+                } else if (message.action === 'sidePanelStateChanged') {
+                    // Handle side panel state changes
+                    if (message.isOpen) {
+                        this.hideButton();
+                    } else {
+                        this.showButton();
+                    }
+                }
+                sendResponse({ success: true });
+            } catch (error) {
+                console.log('Error handling message:', error);
+                sendResponse({ error: error.message });
             }
         });
     }
@@ -196,7 +209,18 @@ class RegulatoryMonitorFloatingButton {
         chrome.runtime.sendMessage({
             action: 'openSidePanel'
         }).catch(error => {
-            console.log('Could not send message to background script:', error);
+            // Silently handle case where background script is not ready
+            // This is normal during extension startup/reload
+            if (error.message.includes('Extension context invalidated') || 
+                error.message.includes('Could not establish connection')) {
+                console.log('Extension context not ready, will retry...');
+                // Try again after a short delay
+                setTimeout(() => {
+                    chrome.runtime.sendMessage({ action: 'openSidePanel' }).catch(() => {
+                        // If still fails, just ignore - user can try clicking again
+                    });
+                }, 500);
+            }
         });
 
         // Add click animation

@@ -108,9 +108,12 @@ class BackgroundService {
                 // Send notification if enabled
                 await this.sendNotification();
                 
-                // Notify popup if open
+                // Notify popup if open (with error handling)
                 if (chrome.runtime.sendMessage) {
-                    chrome.runtime.sendMessage({ action: 'dataUpdated' });
+                    chrome.runtime.sendMessage({ action: 'dataUpdated' }).catch(error => {
+                        // Silently handle case where no receiver exists
+                        console.log('No active receivers for dataUpdated message');
+                    });
                 }
             }
 
@@ -189,9 +192,19 @@ class BackgroundService {
 
     async sendNotification() {
         try {
-            // Check if notifications are enabled
-            const settings = await chrome.storage.local.get(['notificationsEnabled']);
+            // Check if notifications are enabled and not too frequent
+            const settings = await chrome.storage.local.get(['notificationsEnabled', 'lastNotificationTime']);
             if (settings.notificationsEnabled === false) {
+                return;
+            }
+
+            // Prevent notifications more than once per day
+            const now = Date.now();
+            const lastNotificationTime = settings.lastNotificationTime || 0;
+            const oneDay = 24 * 60 * 60 * 1000;
+            
+            if (now - lastNotificationTime < oneDay) {
+                console.log('Skipping notification - less than 24 hours since last notification');
                 return;
             }
 
@@ -201,9 +214,12 @@ class BackgroundService {
                     type: 'basic',
                     iconUrl: 'icons/icon48.png',
                     title: 'Carver Agents',
-                    message: 'Updates available!',
-                    priority: 1
+                    message: 'New regulatory updates available',
+                    priority: 0 // Reduced priority
                 });
+                
+                // Update last notification time
+                await chrome.storage.local.set({ lastNotificationTime: now });
             }
         } catch (error) {
             console.error('Failed to send notification:', error);
@@ -231,8 +247,11 @@ class BackgroundService {
             action: 'sidePanelStateChanged',
             isOpen: isOpen
         }).catch(error => {
-            // Content script might not be ready or tab might be closed
-            console.log('Could not notify content script:', error.message);
+            // Content script might not be ready or tab might be closed - this is normal
+            // Only log in development mode
+            if (this.apiHost.includes('localhost')) {
+                console.log('Could not notify content script:', error.message);
+            }
         });
     }
 
