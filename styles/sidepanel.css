@@ -1411,6 +1411,25 @@ select:focus {
     opacity: 0.4;
 }
 
+/* Filter no results message */
+.filter-no-results {
+    text-align: center;
+    padding: 60px 24px;
+    color: #6b7280;
+}
+
+.filter-no-results p {
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.filter-suggestion {
+    font-size: 12px;
+    color: #9ca3af;
+    font-style: italic;
+}
+
 /* Settings */
 .settings-section {
     margin-bottom: 32px;
