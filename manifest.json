@@ -42,7 +42,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["icons/*", "icons/carver-icons/*", "styles/*"],
+      "resources": ["icons/*", "icons/carver-icons/*", "styles/*", "fonts/*"],
       "matches": ["<all_urls>"]
     }
   ]
