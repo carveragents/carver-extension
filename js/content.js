@@ -166,46 +166,116 @@ class RegulatoryMonitorEdgeTrigger {
             }, 150);
         }
         
-        // Send message to background script to open side panel
-        if (chrome?.runtime?.sendMessage) {
-            chrome.runtime.sendMessage({
-                action: 'openSidePanel'
-            }).catch(error => {
-                console.warn('Failed to open sidepanel:', error.message);
-                // Show user-friendly message
-                this.showErrorMessage('Please refresh the page and try again');
-            });
-        } else {
+        // Attempt to open sidepanel with retry logic
+        this.attemptOpenSidePanel();
+    }
+    
+    async attemptOpenSidePanel(retryCount = 0, maxRetries = 3) {
+        const delays = [0, 100, 500, 1500]; // Progressive delays
+        
+        if (!chrome?.runtime?.sendMessage) {
             console.warn('Chrome runtime not available');
             this.showErrorMessage('Extension not ready - please refresh the page');
+            return;
+        }
+        
+        try {
+            await chrome.runtime.sendMessage({ action: 'openSidePanel' });
+            console.log('✅ Sidepanel opened successfully');
+            
+            // Clear any previous error messages
+            this.clearErrorMessages();
+            
+        } catch (error) {
+            console.warn(`Attempt ${retryCount + 1} failed:`, error.message);
+            
+            // Check if it's a connection error that might resolve with retry
+            const isConnectionError = error.message.includes('Could not establish connection') || 
+                                    error.message.includes('Receiving end does not exist') ||
+                                    error.message.includes('Extension context invalidated');
+            
+            if (isConnectionError && retryCount < maxRetries) {
+                console.log(`🔄 Retrying in ${delays[retryCount + 1]}ms... (attempt ${retryCount + 2}/${maxRetries + 1})`);
+                
+                // Show temporary retry message
+                if (retryCount === 0) {
+                    this.showRetryMessage();
+                }
+                
+                setTimeout(() => {
+                    this.attemptOpenSidePanel(retryCount + 1, maxRetries);
+                }, delays[retryCount + 1]);
+                
+            } else {
+                // All retries failed or it's a different type of error
+                console.error('❌ All attempts failed:', error.message);
+                this.clearErrorMessages();
+                this.showErrorMessage('Extension needs refresh - please reload the page');
+            }
         }
     }
     
-    showErrorMessage(message) {
-        // Create temporary error message
-        const errorDiv = document.createElement('div');
-        errorDiv.textContent = message;
-        Object.assign(errorDiv.style, {
+    showRetryMessage() {
+        this.clearErrorMessages();
+        
+        const retryDiv = document.createElement('div');
+        retryDiv.className = 'carver-status-message';
+        retryDiv.textContent = 'Opening Carver Agents...';
+        Object.assign(retryDiv.style, {
             position: 'fixed',
             top: '20px',
             right: '20px',
-            background: '#ff4444',
+            background: '#2563eb',
             color: 'white',
             padding: '12px 16px',
             borderRadius: '6px',
             zIndex: '1000000',
             fontSize: '14px',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+        });
+        
+        document.body.appendChild(retryDiv);
+    }
+    
+    showErrorMessage(message) {
+        this.clearErrorMessages();
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'carver-status-message';
+        errorDiv.textContent = message;
+        Object.assign(errorDiv.style, {
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            background: '#dc2626',
+            color: 'white',
+            padding: '12px 16px',
+            borderRadius: '6px',
+            zIndex: '1000000',
+            fontSize: '14px',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)'
         });
         
         document.body.appendChild(errorDiv);
         
-        // Auto-remove after 4 seconds
+        // Auto-remove after 5 seconds
         setTimeout(() => {
             if (errorDiv.parentNode) {
                 errorDiv.parentNode.removeChild(errorDiv);
             }
-        }, 4000);
+        }, 5000);
+    }
+    
+    clearErrorMessages() {
+        // Remove any existing status messages
+        const existingMessages = document.querySelectorAll('.carver-status-message');
+        existingMessages.forEach(msg => {
+            if (msg.parentNode) {
+                msg.parentNode.removeChild(msg);
+            }
+        });
     }
 
     // No sidepanel listener needed - trigger is always available
