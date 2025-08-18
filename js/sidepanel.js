@@ -354,7 +354,19 @@ class RegulatoryMonitorSidePanel {
         
         try {
             const topicSummaries = await this.apiCall('/extension/topics/summaries');
-            this.renderTopicSummaries(topicSummaries);
+            
+            // Store the original summaries for filtering
+            this.originalTopicSummaries = topicSummaries;
+            
+            // Apply current search filter if any
+            const searchInput = document.getElementById('topics-search-input');
+            const currentQuery = searchInput ? searchInput.value.trim() : '';
+            
+            if (currentQuery) {
+                this.filterAndRenderTopics(currentQuery);
+            } else {
+                this.renderTopicSummaries(topicSummaries);
+            }
             
             // Update user info in header
             if (this.currentUser && this.currentUser.name) {
@@ -461,29 +473,83 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     async updateTopicSourcesCounts(topics) {
         // Update sources count for each topic by fetching details
         for (const topic of topics) {
+            const topicMetaElement = document.querySelector(`.topic-meta[data-topic-id="${topic.tag_id}"] .sources-info`);
+            
             try {
                 const topicDetails = await this.apiCall(`/extension/topics/${topic.tag_id}/details`);
-                const feedEntries = topicDetails.feed_entries || [];
-                const sourcesCount = feedEntries.length;
+                
+                // Check if we have valid feed entries
+                if (!topicDetails || !topicDetails.feed_entries || !Array.isArray(topicDetails.feed_entries)) {
+                    throw new Error('No valid feed entries found');
+                }
+                
+                const feedEntries = topicDetails.feed_entries;
+                
+                // Deduplicate entries based on link (same logic as renderFeedEntries)
+                const uniqueEntries = feedEntries.filter((entry, index, arr) => {
+                    // Primary deduplication: by link
+                    if (entry.link) {
+                        return arr.findIndex(e => e.link === entry.link) === index;
+                    }
+                    
+                    // Fallback deduplication: by title if no link
+                    if (entry.title) {
+                        return arr.findIndex(e => e.title === entry.title) === index;
+                    }
+                    
+                    return true;
+                });
+                
+                // Calculate unique sources from unique entries
+                const uniqueSources = new Set();
+                uniqueEntries.forEach(entry => {
+                    if (entry.link) {
+                        try {
+                            const url = new URL(entry.link);
+                            uniqueSources.add(url.hostname);
+                        } catch (e) {
+                            // If URL parsing fails, use the full link as source
+                            uniqueSources.add(entry.link);
+                        }
+                    }
+                });
+                
+                const entriesCount = uniqueEntries.length;
+                const sourcesCount = uniqueSources.size;
                 
                 // Update the sources info in the UI
-                const topicMetaElement = document.querySelector(`.topic-meta[data-topic-id="${topic.tag_id}"] .sources-info`);
                 if (topicMetaElement) {
-                    if (sourcesCount > 0) {
+                    if (entriesCount > 0) {
+                        const sourceText = `${entriesCount} ${entriesCount === 1 ? 'source' : 'sources'}`;
                         const lastUpdatedText = topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}` : '';
-                        topicMetaElement.innerHTML = `${sourcesCount} ${sourcesCount === 1 ? 'source' : 'sources'}${lastUpdatedText}`;
+                        topicMetaElement.innerHTML = `${sourceText}${lastUpdatedText}`;
                     } else {
-                        // Hide sources info when no data
-                        topicMetaElement.innerHTML = topic.last_updated ? `Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        // Show no entries available
+                        const lastUpdatedText = topic.last_updated ? `Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        topicMetaElement.innerHTML = lastUpdatedText || 'No entries yet';
                     }
                 }
             } catch (error) {
-                console.error(`Failed to fetch details for topic ${topic.tag_id}:`, error);
-                // Fall back to cached count
-                const topicMetaElement = document.querySelector(`.topic-meta[data-topic-id="${topic.tag_id}"] .sources-info`);
-                if (topicMetaElement) {
-                    const lastUpdatedText = topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}` : '';
-                    topicMetaElement.innerHTML = `${topic.link_count || 0} ${(topic.link_count || 0) === 1 ? 'source' : 'sources'}${lastUpdatedText}`;
+                // Silently handle HTTP 500 errors and other API issues
+                if (error.message.includes('HTTP 500') || error.message.includes('HTTP 404')) {
+                    // For server errors, show fallback info without logging error
+                    if (topicMetaElement) {
+                        const lastUpdatedText = topic.last_updated ? `Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        topicMetaElement.innerHTML = lastUpdatedText || 'Data unavailable';
+                    }
+                } else {
+                    // For other errors, log but still show fallback
+                    console.warn(`Could not fetch details for topic ${topic.tag_name || topic.tag_id}:`, error.message);
+                    if (topicMetaElement) {
+                        const fallbackCount = topic.link_count || 0;
+                        const lastUpdatedText = topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        
+                        if (fallbackCount > 0) {
+                            topicMetaElement.innerHTML = `${fallbackCount} ${fallbackCount === 1 ? 'source' : 'sources'}${lastUpdatedText}`;
+                        } else {
+                            topicMetaElement.innerHTML = lastUpdatedText || 'No data available';
+                        }
+                    }
                 }
             }
         }
@@ -565,8 +631,23 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             return;
         }
 
+        // Deduplicate entries based on link (primary) and title (fallback)
+        const uniqueEntries = feedEntries.filter((entry, index, arr) => {
+            // Primary deduplication: by link
+            if (entry.link) {
+                return arr.findIndex(e => e.link === entry.link) === index;
+            }
+            
+            // Fallback deduplication: by title if no link
+            if (entry.title) {
+                return arr.findIndex(e => e.title === entry.title) === index;
+            }
+            
+            return true;
+        });
+
         // Sort entries by published date (latest first)
-        const sortedEntries = [...feedEntries].sort((a, b) => {
+        const sortedEntries = [...uniqueEntries].sort((a, b) => {
             const dateA = new Date(a.published_date);
             const dateB = new Date(b.published_date);
             return dateB - dateA;
@@ -2125,7 +2206,18 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     // Topics Search Methods
     async handleTopicsSearch(query) {
         try {
-            // Get all topics for filtering
+            // Filter the dashboard topics if we have them
+            if (this.originalTopicSummaries) {
+                if (!query.trim()) {
+                    // Show all subscribed topics when no query
+                    this.renderTopicSummaries(this.originalTopicSummaries);
+                } else {
+                    // Filter subscribed topics
+                    this.filterAndRenderTopics(query);
+                }
+            }
+
+            // Get all topics for search suggestions dropdown
             if (!this.allTopics) {
                 await this.loadAllTopics();
             }
@@ -2143,6 +2235,33 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             await this.showTopicsSuggestions(filteredTopics.slice(0, 10)); // Show top 10 matches
         } catch (error) {
             console.error('Topics search failed:', error);
+        }
+    }
+
+    filterAndRenderTopics(query) {
+        if (!this.originalTopicSummaries) {
+            return;
+        }
+
+        const filteredSummaries = this.originalTopicSummaries.filter(topic => 
+            topic.tag_name.toLowerCase().includes(query.toLowerCase()) ||
+            (topic.meta_summary && topic.meta_summary.toLowerCase().includes(query.toLowerCase()))
+        );
+
+        this.renderTopicSummaries(filteredSummaries);
+        
+        // Show a message if no results found
+        const container = document.getElementById('tag-summaries');
+        const emptyState = document.getElementById('empty-state');
+        
+        if (filteredSummaries.length === 0 && this.originalTopicSummaries.length > 0) {
+            container.innerHTML = `
+                <div class="filter-no-results">
+                    <p>No subscribed topics match "${this.escapeHtml(query)}"</p>
+                    <p class="filter-suggestion">Try searching for new topics to subscribe to in the dropdown above.</p>
+                </div>
+            `;
+            emptyState.classList.add('hidden');
         }
     }
 

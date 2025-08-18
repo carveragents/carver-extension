@@ -12,8 +12,7 @@
   ],
   "host_permissions": [
     "https://app.carveragents.ai/*",
-    "https://staging.carveragents.ai/*",
-    "http://localhost:8000/*"
+    "https://staging.carveragents.ai/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -43,7 +42,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["icons/*", "icons/carver-icons/*", "styles/*"],
+      "resources": ["icons/*", "icons/carver-icons/*", "styles/*", "fonts/*"],
       "matches": ["<all_urls>"]
     }
   ]
