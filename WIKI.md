@@ -4,18 +4,14 @@ A comprehensive guide for installing, using, and troubleshooting the Carver Agen
 
 ## 📥 Installation
 
-### Method 1: Chrome Web Store (Recommended)
-1. Visit the [Carver Agents extension page](https://chrome.google.com/webstore) on Chrome Web Store
-2. Click **"Add to Chrome"**
-3. Click **"Add extension"** in the confirmation dialog
-4. The Carver Agents icon will appear in your Chrome toolbar
-
-### Method 2: Developer Installation (For Testing)
+### Method 1: Developer Installation
 1. Download or clone the extension files
 2. Open Chrome and navigate to `chrome://extensions/`
 3. Enable **"Developer mode"** toggle in the top right
 4. Click **"Load unpacked"** and select the extension folder
 5. The Carver Agents icon should appear in your toolbar
+
+### Method 2: Webstore Installation - Coming soon
 
 ## 🚀 Getting Started
 
