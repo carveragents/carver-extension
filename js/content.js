@@ -46,7 +46,7 @@ class RegulatoryMonitorEdgeTrigger {
         // Add hover-revealed icon
         this.trigger.innerHTML = `
             <div class="trigger-icon">
-                <img src="${chrome.runtime.getURL('icons/icon16.svg')}" alt="Carver Agents" class="carver-icon">
+                <img src="${chrome.runtime.getURL('icons/edge-button.png')}" alt="Carver Agents" class="carver-icon">
             </div>
         `;
 
@@ -55,11 +55,11 @@ class RegulatoryMonitorEdgeTrigger {
             position: 'fixed',
             top: '50%',
             right: '0px',
-            transform: 'translateY(-50%) translateX(calc(100% - 8px))',
-            width: '50px',
-            height: '80px',
-            background: this.getThemeAwareBackground(),
-            borderRadius: '6px 0 0 6px',
+            transform: 'translateY(-50%) translateX(calc(100% - 60px))',
+            width: '120px',
+            height: '160px',
+            background: 'transparent',
+            borderRadius: '0',
             cursor: 'pointer',
             zIndex: '999999',
             display: 'flex',
@@ -71,8 +71,8 @@ class RegulatoryMonitorEdgeTrigger {
             border: 'none',
             outline: 'none',
             userSelect: 'none',
-            boxShadow: '-2px 0 8px rgba(0, 0, 0, 0.15)',
-            opacity: '0.8'
+            boxShadow: 'none',
+            opacity: '1'
         });
 
         // Add to page
@@ -94,25 +94,25 @@ class RegulatoryMonitorEdgeTrigger {
                 }
                 
                 #carver-edge-trigger:hover {
-                    transform: translateY(-50%) translateX(calc(100% - 25px)) !important;
-                    box-shadow: -3px 0 15px rgba(0, 0, 0, 0.25) !important;
+                    transform: translateY(-50%) translateX(calc(100% - 75px)) !important;
+                    box-shadow: none !important;
                     opacity: 1 !important;
                 }
                 
                 #carver-edge-trigger:active {
-                    transform: translateY(-50%) translateX(calc(100% - 22px)) !important;
+                    transform: translateY(-50%) translateX(calc(100% - 70px)) !important;
                 }
                 
                 #carver-edge-trigger .trigger-icon {
-                    opacity: 0;
-                    transform: scale(0.8);
+                    opacity: 1;
+                    transform: scale(1);
                     transition: opacity 0.3s ease, transform 0.3s ease;
                     display: flex;
                     align-items: center;
-                    justify-content: flex-start;
+                    justify-content: center;
                     width: 100%;
                     height: 100%;
-                    padding-left: 2px;
+                    padding: 0;
                 }
                 
                 #carver-edge-trigger:hover .trigger-icon {
@@ -121,10 +121,10 @@ class RegulatoryMonitorEdgeTrigger {
                 }
                 
                 #carver-edge-trigger .carver-icon {
-                    width: 16px;
-                    height: 16px;
-                    border-radius: 2px;
-                    filter: brightness(1.2);
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
+                    border-radius: 0;
                 }
             `;
             document.head.appendChild(style);
@@ -168,9 +168,9 @@ class RegulatoryMonitorEdgeTrigger {
         
         // Add click animation
         if (this.trigger) {
-            this.trigger.style.transform = 'translateY(-50%) translateX(calc(100% - 20px))';
+            this.trigger.style.transform = 'translateY(-50%) translateX(calc(100% - 75px))';
             setTimeout(() => {
-                this.trigger.style.transform = 'translateY(-50%) translateX(calc(100% - 8px))';
+                this.trigger.style.transform = 'translateY(-50%) translateX(calc(100% - 60px))';
             }, 150);
         }
         
@@ -290,9 +290,8 @@ class RegulatoryMonitorEdgeTrigger {
     updateForThemeChange() {
         if (!this.trigger) return;
         
-        // Update background color
-        this.trigger.style.background = this.getThemeAwareBackground();
-        console.log('Updated edge trigger background for theme change');
+        // No background color to update since we're using transparent background
+        console.log('Edge trigger theme change - background remains transparent');
     }
 
     // No sidepanel listener needed - trigger is always available

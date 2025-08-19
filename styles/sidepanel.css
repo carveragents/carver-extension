@@ -394,6 +394,19 @@ html, body {
     font-weight: 500;
 }
 
+/* FAQ link specific styling */
+.faq-link {
+    color: #1a73e8;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.faq-link:hover {
+    text-decoration: underline;
+    color: #1557b0;
+}
+
 .icon-btn {
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid #6b7280;
