@@ -46,7 +46,7 @@ class RegulatoryMonitorEdgeTrigger {
         // Add hover-revealed icon
         this.trigger.innerHTML = `
             <div class="trigger-icon">
-                <img src="${chrome.runtime.getURL('icons/icon16.png')}" alt="Carver Agents" class="carver-icon">
+                <img src="${chrome.runtime.getURL('icons/icon16.svg')}" alt="Carver Agents" class="carver-icon">
             </div>
         `;
 
@@ -140,6 +140,14 @@ class RegulatoryMonitorEdgeTrigger {
             this.openSidePanel();
         });
 
+        // Listen for theme changes
+        if (window.matchMedia) {
+            const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            darkModeQuery.addListener(() => {
+                this.updateForThemeChange();
+            });
+        }
+
         // Simple hover effect on scroll (optional)
         let scrollTimeout;
         window.addEventListener('scroll', () => {
@@ -210,7 +218,7 @@ class RegulatoryMonitorEdgeTrigger {
                 // All retries failed or it's a different type of error
                 console.error('❌ All attempts failed:', error.message);
                 this.clearErrorMessages();
-                this.showErrorMessage('Extension needs refresh - please reload the page');
+                this.showErrorMessage('Unable to open extension. Please refresh the page.');
             }
         }
     }
@@ -278,12 +286,22 @@ class RegulatoryMonitorEdgeTrigger {
         });
     }
 
+    // Update edge trigger appearance when theme changes
+    updateForThemeChange() {
+        if (!this.trigger) return;
+        
+        // Update background color
+        this.trigger.style.background = this.getThemeAwareBackground();
+        console.log('Updated edge trigger background for theme change');
+    }
+
     // No sidepanel listener needed - trigger is always available
 
     getThemeAwareBackground() {
         // Check if user prefers dark mode
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        return prefersDark ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'linear-gradient(135deg, #000000 0%, #434343 100%)';
+        // Use extension's green theme colors - #bae424 (primary) and #a5d220 (darker variant)
+        return prefersDark ? 'linear-gradient(135deg, #bae424 0%, #a5d220 100%)' : 'linear-gradient(135deg, #000000 0%, #434343 100%)';
     }
 
     destroy() {

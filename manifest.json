@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Carver Agents",
   "version": "1.0.0",
-  "description": "Stay updated with regulatory and partner updates",
+  "description": "Stay ahead with real-time contextual intelligence. Track regulatory updates. Monitor your partners.",
   "permissions": [
     "storage",
     "alarms",

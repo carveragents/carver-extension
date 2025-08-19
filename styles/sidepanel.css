@@ -10,7 +10,7 @@
 /* Side panel specific styling */
 html, body {
     width: 100%;
-    max-width: 100vw; /* Prevent horizontal overflow on Linux */
+    max-width: 100%; /* Use percentage for better cross-platform consistency */
     height: 100vh;
     margin: 0;
     padding: 0;
@@ -27,7 +27,7 @@ html, body {
 /* App container for side panel */
 #app {
     width: 100%;
-    max-width: 100vw; /* Prevent width expansion on Linux */
+    max-width: 100%; /* Use percentage instead of vw for consistency */
     height: 100vh;
     background: #ffffff;
     display: flex;
@@ -2845,29 +2845,48 @@ select:focus-visible {
 
 /* Linux-specific fixes without affecting Mac layout */
 
-/* Detect Linux Chrome (has both webkit and likely Linux user agent patterns) */
-@supports (-webkit-appearance: none) {
-    /* Width consistency fixes for Linux */
+/* Better cross-platform fixes - detect non-Mac systems */
+@media screen and (-webkit-min-device-pixel-ratio: 1) {
+    /* Target Linux and other non-Retina systems for better spacing */
+    
+    /* Constrain overall app width to prevent horizontal stretching */
     #app {
-        max-width: 100vw;
+        width: 100%;
+        max-width: 380px; /* Prevent excessive width on Linux */
+        min-width: 320px; /* Maintain minimum usable width */
         overflow-x: hidden;
     }
     
-    html, body {
-        max-width: 100vw;
-    }
-    
-    /* Linux Ubuntu specific - fix disappearing top gap */
+    /* Fix login container for better proportions */
     .login-container {
-        min-height: calc(100vh - 20px); /* Prevent collapse that removes top space */
-        padding-top: max(20px, env(safe-area-inset-top, 20px)); /* Ensure minimum top padding */
+        padding: 40px 32px; /* More generous top/bottom spacing */
+        max-width: 340px; /* Constrain form width */
+        margin: 0 auto; /* Center horizontally */
+        min-height: 100vh;
     }
     
+    /* Better login form proportions */
+    .login-form {
+        max-width: 280px; /* Consistent form element width */
+        width: 100%;
+    }
+    
+    /* Improve header spacing */
     .login-header {
-        margin-top: 10px; /* Small top margin to prevent gap collapse */
+        margin-bottom: 48px; /* More space below logo/title */
+        margin-top: 0; /* Reset any previous margin */
     }
     
-    /* Minimal font fixes for Linux only - no smoothing changes */
+    /* Ensure input fields aren't too wide */
+    .login-form input[type="password"] {
+        max-width: 100%;
+    }
+    
+    /* Better button proportions */
+    .login-btn {
+        max-width: 100%;
+        width: 100%;
+    }
 }
 
 /* Login Screen Redesign */
