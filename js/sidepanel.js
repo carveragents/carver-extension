@@ -5,8 +5,8 @@ class RegulatoryMonitorSidePanel {
         this.currentUser = null;
         this.currentScreen = 'loading';
         //this.apiHost = 'http://localhost:8000'; // Default to local development
-        //this.apiHost = 'https://staging.carveragents.ai'; // Default to staging
-        this.apiHost = 'https://app.carveragents.ai'; // Default to production
+        this.apiHost = 'https://staging.carveragents.ai'; // Default to staging
+        //this.apiHost = 'https://app.carveragents.ai'; // Default to production
         this.apiBaseUrl = `${this.apiHost}/api/v1`;
         this.cache = new Map();
         this.retryCount = 0;
@@ -815,20 +815,65 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             
             // Load horizon dashboard data from extension API  
             const keywords = await this.apiCall('/extension/horizon/keywords');
+            console.log('Raw keywords from main endpoint:', keywords.map(k => ({
+                keyword: k.keyword,
+                keyword_id: k.keyword_id,
+                frequency: k.frequency,
+                frequencyType: typeof k.frequency
+            })));
+            
+            // Enhanced frequency handling: use main endpoint data if available, fallback to details endpoint
+            const keywordsWithFrequency = await Promise.all(keywords.map(async (keyword) => {
+                // First check if frequency is already available from main endpoint
+                if (keyword.frequency && keyword.frequency !== 'undefined') {
+                    console.log(`Using frequency from main endpoint for ${keyword.keyword}: ${keyword.frequency}`);
+                    return {
+                        ...keyword,
+                        frequency: keyword.frequency
+                    };
+                }
+                
+                // Fallback: fetch from individual details endpoint if main endpoint doesn't have frequency
+                try {
+                    console.log(`Fetching frequency details for ${keyword.keyword} (keyword_id: ${keyword.keyword_id})`);
+                    const details = await this.apiCall(`/extension/horizon/keywords/${keyword.keyword_id}/details`);
+                    const fetchedFrequency = details.frequency || 'daily';
+                    console.log(`Fetched frequency for ${keyword.keyword}: ${fetchedFrequency}`);
+                    return {
+                        ...keyword,
+                        frequency: fetchedFrequency
+                    };
+                } catch (error) {
+                    console.warn(`Could not fetch frequency details for ${keyword.keyword} (ID: ${keyword.keyword_id}):`, error);
+                    // Check if it's a 503 error specifically
+                    if (error.message && error.message.includes('503')) {
+                        console.warn(`Service unavailable for ${keyword.keyword}, using default frequency`);
+                    }
+                    return {
+                        ...keyword,
+                        frequency: 'daily' // Fallback to daily if details fetch fails
+                    };
+                }
+            }));
+            
+            console.log('Keywords with frequency data:', keywordsWithFrequency.map(k => ({
+                keyword: k.keyword,
+                frequency: k.frequency
+            })));
             
             // Transform keywords data to dashboard format
             const horizonData = {
-                total_keywords: keywords.length,
+                total_keywords: keywordsWithFrequency.length,
                 summaries_today: 0, // Always show 0 as requested
-                recent_meta_summaries: keywords.filter(k => k.meta_summary && k.meta_summary !== `No summaries available for '${k.keyword}'`)
+                recent_meta_summaries: keywordsWithFrequency.filter(k => k.meta_summary && k.meta_summary !== `No summaries available for '${k.keyword}'`)
             };
             this.renderHorizonDashboard(horizonData);
             
-            // Render keywords list using the same data
-            this.renderKeywordsList(keywords);
+            // Render keywords list using the frequency-enhanced data
+            this.renderKeywordsList(keywordsWithFrequency);
             
-            // Store keywords data for partner search
-            this.allPartners = keywords;
+            // Store frequency-enhanced keywords data for partner search
+            this.allPartners = keywordsWithFrequency;
             
         } catch (error) {
             console.error('Failed to load horizon content:', error);
@@ -903,6 +948,14 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             // If dates are equal, sort by keyword name
             return a.keyword.localeCompare(b.keyword);
         });
+        
+        // Debug: Log frequency data for each keyword
+        console.log('Partner frequency debug:', sortedKeywords.map(k => ({
+            keyword: k.keyword,
+            frequency: k.frequency,
+            frequencyType: typeof k.frequency,
+            keyword_id: k.keyword_id
+        })));
         
         container.innerHTML = `
             ${sortedKeywords.map((keyword, index) => {
@@ -1528,8 +1581,24 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     isEpochDate(dateString) {
         try {
             const date = new Date(dateString);
-            // Check if it's Jan 1, 1970 (epoch) or invalid date
-            return isNaN(date.getTime()) || date.getTime() === 0;
+            const now = new Date();
+            
+            // Check if it's invalid date
+            if (isNaN(date.getTime())) {
+                return true;
+            }
+            
+            // Check if it's Jan 1, 1970 (epoch)
+            if (date.getTime() === 0) {
+                return true;
+            }
+            
+            // Check if it's in the future (reject future dates like 31stDec9999)
+            if (date > now) {
+                return true;
+            }
+            
+            return false;
         } catch (error) {
             return true;
         }
@@ -3198,6 +3267,14 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             const horizonUrl = `${this.apiBaseUrl}/extension/horizon/keywords`;
             this.cache.delete(horizonUrl);
             
+            // Clear cache for all keyword detail endpoints (for frequency data)
+            const keywordDetailPattern = '/extension/horizon/keywords/';
+            for (const [url] of this.cache) {
+                if (url.includes(keywordDetailPattern)) {
+                    this.cache.delete(url);
+                }
+            }
+            
             // Reload the horizon data
             await this.loadHorizonData();
             
@@ -3285,9 +3362,27 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     showEditPartnerModal(keywordId, keywordName, frequency) {
         this.currentEditingKeywordId = keywordId;
         
+        // Debug logging
+        console.log('Edit Partner Modal:', {
+            keywordId,
+            keywordName,
+            frequency,
+            frequencyType: typeof frequency,
+            frequencyAfterDefault: frequency || 'daily'
+        });
+        
         // Populate the form with current values
         document.getElementById('edit-partner-input').value = keywordName;
-        document.getElementById('edit-frequency-select').value = frequency || 'daily';
+        const frequencySelect = document.getElementById('edit-frequency-select');
+        const finalFrequency = frequency || 'daily';
+        
+        console.log('Setting frequency select:', {
+            element: frequencySelect,
+            value: finalFrequency,
+            availableOptions: Array.from(frequencySelect.options).map(opt => opt.value)
+        });
+        
+        frequencySelect.value = finalFrequency;
         
         // Clear any previous error messages
         const errorElement = document.getElementById('edit-partner-input-error');
