@@ -10,6 +10,10 @@ A Chrome extension for real-time regulatory monitoring and partner watch functio
 - **Floating Button**: Quick access button that appears on web pages
 - **Smart Notifications**: Background sync with customizable refresh intervals
 
+## Status
+
+- Advanced Development : Will be added to Chrome WebStore shortly
+
 ## Installation
 
 1. Clone or download this repository
