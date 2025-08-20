@@ -2,8 +2,8 @@
 class BackgroundService {
     constructor() {
         //this.apiHost = 'http://localhost:8000'; // Default to local development
-        this.apiHost = 'https://staging.carveragents.ai'; // Default to staging
-        //this.apiHost = 'https://app.carveragents.ai'; // Default to production
+        //this.apiHost = 'https://staging.carveragents.ai'; // Default to staging
+        this.apiHost = 'https://app.carveragents.ai'; // Default to production
         this.apiBaseUrl = `${this.apiHost}/api/v1`;
         this.refreshInterval = 15 * 60 * 1000; // 15 minutes
         this.alarmName = 'regulatoryMonitorRefresh';

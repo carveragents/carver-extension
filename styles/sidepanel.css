@@ -10,7 +10,6 @@
 /* Side panel specific styling */
 html, body {
     width: 100%;
-    max-width: 100%; /* Use percentage for better cross-platform consistency */
     height: 100vh;
     margin: 0;
     padding: 0;
@@ -27,7 +26,6 @@ html, body {
 /* App container for side panel */
 #app {
     width: 100%;
-    max-width: 100%; /* Use percentage instead of vw for consistency */
     height: 100vh;
     background: #ffffff;
     display: flex;
@@ -2858,49 +2856,6 @@ select:focus-visible {
 
 /* Linux-specific fixes without affecting Mac layout */
 
-/* Better cross-platform fixes - detect non-Mac systems */
-@media screen and (-webkit-min-device-pixel-ratio: 1) {
-    /* Target Linux and other non-Retina systems for better spacing */
-    
-    /* Constrain overall app width to prevent horizontal stretching */
-    #app {
-        width: 100%;
-        max-width: 380px; /* Prevent excessive width on Linux */
-        min-width: 320px; /* Maintain minimum usable width */
-        overflow-x: hidden;
-    }
-    
-    /* Fix login container for better proportions */
-    .login-container {
-        padding: 40px 32px; /* More generous top/bottom spacing */
-        max-width: 340px; /* Constrain form width */
-        margin: 0 auto; /* Center horizontally */
-        min-height: 100vh;
-    }
-    
-    /* Better login form proportions */
-    .login-form {
-        max-width: 280px; /* Consistent form element width */
-        width: 100%;
-    }
-    
-    /* Improve header spacing */
-    .login-header {
-        margin-bottom: 48px; /* More space below logo/title */
-        margin-top: 0; /* Reset any previous margin */
-    }
-    
-    /* Ensure input fields aren't too wide */
-    .login-form input[type="password"] {
-        max-width: 100%;
-    }
-    
-    /* Better button proportions */
-    .login-btn {
-        max-width: 100%;
-        width: 100%;
-    }
-}
 
 /* Login Screen Redesign */
 .login-container {
