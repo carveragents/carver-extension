@@ -23,7 +23,7 @@
         <div id="api-key-setup" class="screen hidden">
             <div class="login-container">
                 <div class="login-header">
-                    <img src="icons/icon32.png" alt="Carver Agents" class="login-logo">
+                    <img src="icons/icon32.svg" alt="Carver Agents" class="login-logo">
                     <h1 class="login-brand">Carver Agents</h1>
                     <p class="login-subtitle">Real-time Contextual Intelligence<br />Anytime, Anywhere</p>
                 </div>
@@ -78,7 +78,7 @@
         <div id="main-dashboard" class="screen hidden">
             <div class="header">
                 <div class="header-brand">
-                    <img src="icons/icon32.png" alt="Carver Agents" class="header-logo">
+                    <img src="icons/icon32.svg" alt="Carver Agents" class="header-logo">
                     <div class="brand-info">
                         <h1 class="brand-title">Carver Agents</h1>
                     </div>
@@ -146,7 +146,7 @@
                             </div>
                         </div>
                         <div class="partner-header-actions">
-                            <div class="sentiment-filter-container" style="display: none;">
+                            <div class="sentiment-filter-container">
                                 <button id="sentiment-filter-btn" class="icon-btn" title="Filter by Sentiment">
                                     <img src="icons/carver-icons/share_18x18.svg" alt="Filter" width="14" height="14" style="transform: rotate(90deg);">
                                 </button>
@@ -426,7 +426,10 @@
                 </div>
                 <div class="modal-body">
                     <div class="support-content">
-                        <p>Need help? Contact our support team:</p>
+                        <p class="faq-text">
+                            <a href="https://github.com/carveragents/carver-extension/wiki/Carver-Agents-Chrome-Extension-%E2%80%90-User-Guide-and-FAQs" target="_blank" class="faq-link">View User Guide & FAQs</a>
+                        </p>
+                        <p>Need further help? Contact our support team:</p>
                         <div class="support-email">
                             <strong>support@carveragents.ai</strong>
                         </div>
@@ -604,7 +607,7 @@
                     <button id="change-api-key" class="btn btn-secondary" style="display: none;">Change API Key</button>
                 </div>
 
-                <div class="settings-section">
+                <!-- <div class="settings-section">
                     <h3>Preferences</h3>
                     <div class="setting-item">
                         <label for="refresh-interval">Auto-refresh interval (minutes)</label>
@@ -615,7 +618,7 @@
                             <option value="60">1 hour</option>
                         </select>
                     </div>
-                </div>
+                </div> -->
 
                 <div class="settings-section">
                     <button id="logout-btn" class="btn btn-danger">Logout</button>

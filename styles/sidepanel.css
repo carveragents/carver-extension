@@ -1,5 +1,5 @@
 /* Side Panel Styles for Carver Agent - Carver Agents Design */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('../fonts/poppins.css');
 
 * {
     margin: 0;
@@ -13,12 +13,14 @@ html, body {
     height: 100vh;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    overflow: auto;
     font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 12px;
     font-weight: 400;
     color: #1a1a1a;
     background: #ffffff;
+    /* Force consistent box model across platforms */
+    box-sizing: border-box;
 }
 
 /* App container for side panel */
@@ -30,6 +32,9 @@ html, body {
     flex-direction: column;
     position: relative;
     border-left: 1px solid #e5e7eb;
+    /* Force consistent rendering across platforms */
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 /* Action Result Modal */
@@ -52,6 +57,7 @@ html, body {
     border-radius: 12px;
     width: 90%;
     max-width: 500px;
+    max-height: 120vh;
     margin: auto 0;
     overflow: hidden;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
@@ -60,7 +66,7 @@ html, body {
 
 .modal-header {
     background: #fafafa;
-    padding: 10px 14px;
+    padding: 20px 24px;
     border-bottom: 1px solid #e5e7eb;
     display: flex;
     justify-content: space-between;
@@ -91,8 +97,8 @@ html, body {
 }
 
 .modal-body {
-    padding: 20px;
-    max-height: 60vh;
+    padding: 24px;
+    max-height: 90vh;
     overflow-y: auto;
 }
 
@@ -243,7 +249,7 @@ html, body {
 .header-right {
     display: flex;
     align-items: center;
-    gap: 1px;
+    gap: 12px;
     flex-shrink: 0;
 }
 
@@ -385,6 +391,19 @@ html, body {
     font-size: 11px;
     min-height: 28px;
     font-weight: 500;
+}
+
+/* FAQ link specific styling */
+.faq-link {
+    color: #1a73e8;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.faq-link:hover {
+    text-decoration: underline;
+    color: #1557b0;
 }
 
 .icon-btn {
@@ -665,7 +684,7 @@ select:focus {
     color: #374151;
     margin-bottom: 8px;
     margin-top: 8px;
-    font-weight: 500;
+    font-weight: 400;
 }
 
 .entry-sentiment {
@@ -1409,6 +1428,25 @@ select:focus {
     text-align: center;
     margin-bottom: 20px;
     opacity: 0.4;
+}
+
+/* Filter no results message */
+.filter-no-results {
+    text-align: center;
+    padding: 60px 24px;
+    color: #6b7280;
+}
+
+.filter-no-results p {
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.filter-suggestion {
+    font-size: 12px;
+    color: #9ca3af;
+    font-style: italic;
 }
 
 /* Settings */
@@ -2815,6 +2853,11 @@ select:focus-visible {
     background: white;
 }
 
+/* Remove platform font adjustments - keep original rendering */
+
+/* Linux-specific fixes without affecting Mac layout */
+
+
 /* Login Screen Redesign */
 .login-container {
     display: flex;
@@ -2822,8 +2865,19 @@ select:focus-visible {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 20px 40px;
+    padding: max(16px, calc((100vh - 600px) / 2)) 40px;
     background: #ffffff;
+    /* Minimal platform fixes */
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+/* Responsive behavior for smaller screens */
+@media (max-height: 650px) {
+    .login-container {
+        justify-content: flex-start;
+        padding: 16px 40px;
+    }
 }
 
 .login-header {
@@ -2866,6 +2920,8 @@ select:focus-visible {
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    /* Prevent width expansion on Linux while maintaining margins */
+    box-sizing: border-box;
 }
 
 .login-title {

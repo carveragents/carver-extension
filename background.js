@@ -7,7 +7,7 @@ class BackgroundService {
         this.apiBaseUrl = `${this.apiHost}/api/v1`;
         this.refreshInterval = 15 * 60 * 1000; // 15 minutes
         this.alarmName = 'regulatoryMonitorRefresh';
-        this.sidePanelState = new Map(); // Track sidepanel state per tab
+        // No complex state tracking needed for edge trigger approach
         
         this.init();
     }
@@ -81,8 +81,7 @@ class BackgroundService {
             });
         }
 
-        // Track sidepanel state changes
-        this.setupSidePanelTracking();
+        // Simple sidepanel handling - no complex state tracking needed
 
         console.log('Carver Agents background service initialized');
     }
@@ -108,9 +107,12 @@ class BackgroundService {
                 // Send notification if enabled
                 await this.sendNotification();
                 
-                // Notify popup if open
+                // Notify popup if open (with error handling)
                 if (chrome.runtime.sendMessage) {
-                    chrome.runtime.sendMessage({ action: 'dataUpdated' });
+                    chrome.runtime.sendMessage({ action: 'dataUpdated' }).catch(error => {
+                        // Silently handle case where no receiver exists
+                        console.log('No active receivers for dataUpdated message');
+                    });
                 }
             }
 
@@ -189,9 +191,19 @@ class BackgroundService {
 
     async sendNotification() {
         try {
-            // Check if notifications are enabled
-            const settings = await chrome.storage.local.get(['notificationsEnabled']);
+            // Check if notifications are enabled and not too frequent
+            const settings = await chrome.storage.local.get(['notificationsEnabled', 'lastNotificationTime']);
             if (settings.notificationsEnabled === false) {
+                return;
+            }
+
+            // Prevent notifications more than once per day
+            const now = Date.now();
+            const lastNotificationTime = settings.lastNotificationTime || 0;
+            const oneDay = 24 * 60 * 60 * 1000;
+            
+            if (now - lastNotificationTime < oneDay) {
+                console.log('Skipping notification - less than 24 hours since last notification');
                 return;
             }
 
@@ -201,9 +213,12 @@ class BackgroundService {
                     type: 'basic',
                     iconUrl: 'icons/icon48.png',
                     title: 'Carver Agents',
-                    message: 'Updates available!',
-                    priority: 1
+                    message: 'New regulatory updates available',
+                    priority: 0 // Reduced priority
                 });
+                
+                // Update last notification time
+                await chrome.storage.local.set({ lastNotificationTime: now });
             }
         } catch (error) {
             console.error('Failed to send notification:', error);
@@ -215,63 +230,14 @@ class BackgroundService {
             if (chrome.sidePanel) {
                 await chrome.sidePanel.open({ tabId: tab.id });
                 console.log('Side panel opened for tab:', tab.id);
-                
-                // Track sidepanel state and notify content script
-                this.sidePanelState.set(tab.id, true);
-                this.notifyContentScript(tab.id, true);
+                // No state tracking needed - edge trigger is always available
             }
         } catch (error) {
             console.error('Failed to open side panel:', error);
         }
     }
 
-    notifyContentScript(tabId, isOpen) {
-        // Notify content script of sidepanel state change
-        chrome.tabs.sendMessage(tabId, {
-            action: 'sidePanelStateChanged',
-            isOpen: isOpen
-        }).catch(error => {
-            // Content script might not be ready or tab might be closed
-            console.log('Could not notify content script:', error.message);
-        });
-    }
-
-    setupSidePanelTracking() {
-        // Listen for tab activation changes (user switches tabs)
-        if (chrome.tabs.onActivated) {
-            chrome.tabs.onActivated.addListener((activeInfo) => {
-                // When user switches to a tab, assume sidepanel is closed
-                this.sidePanelState.forEach((isOpen, tabId) => {
-                    if (tabId !== activeInfo.tabId && isOpen) {
-                        this.sidePanelState.set(tabId, false);
-                        this.notifyContentScript(tabId, false);
-                    }
-                });
-            });
-        }
-
-        // Listen for window focus changes
-        if (chrome.windows.onFocusChanged) {
-            chrome.windows.onFocusChanged.addListener((windowId) => {
-                if (windowId === chrome.windows.WINDOW_ID_NONE) {
-                    // Window lost focus, assume all sidepanels closed
-                    this.sidePanelState.forEach((isOpen, tabId) => {
-                        if (isOpen) {
-                            this.sidePanelState.set(tabId, false);
-                            this.notifyContentScript(tabId, false);
-                        }
-                    });
-                }
-            });
-        }
-
-        // Clean up state when tabs are closed
-        if (chrome.tabs.onRemoved) {
-            chrome.tabs.onRemoved.addListener((tabId) => {
-                this.sidePanelState.delete(tabId);
-            });
-        }
-    }
+    // No complex sidepanel tracking needed for edge trigger approach
 
     async handleMessage(request, sender, sendResponse) {
         try {

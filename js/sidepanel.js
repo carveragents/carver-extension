@@ -354,7 +354,19 @@ class RegulatoryMonitorSidePanel {
         
         try {
             const topicSummaries = await this.apiCall('/extension/topics/summaries');
-            this.renderTopicSummaries(topicSummaries);
+            
+            // Store the original summaries for filtering
+            this.originalTopicSummaries = topicSummaries;
+            
+            // Apply current search filter if any
+            const searchInput = document.getElementById('topics-search-input');
+            const currentQuery = searchInput ? searchInput.value.trim() : '';
+            
+            if (currentQuery) {
+                this.filterAndRenderTopics(currentQuery);
+            } else {
+                this.renderTopicSummaries(topicSummaries);
+            }
             
             // Update user info in header
             if (this.currentUser && this.currentUser.name) {
@@ -461,29 +473,83 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     async updateTopicSourcesCounts(topics) {
         // Update sources count for each topic by fetching details
         for (const topic of topics) {
+            const topicMetaElement = document.querySelector(`.topic-meta[data-topic-id="${topic.tag_id}"] .sources-info`);
+            
             try {
                 const topicDetails = await this.apiCall(`/extension/topics/${topic.tag_id}/details`);
-                const feedEntries = topicDetails.feed_entries || [];
-                const sourcesCount = feedEntries.length;
+                
+                // Check if we have valid feed entries
+                if (!topicDetails || !topicDetails.feed_entries || !Array.isArray(topicDetails.feed_entries)) {
+                    throw new Error('No valid feed entries found');
+                }
+                
+                const feedEntries = topicDetails.feed_entries;
+                
+                // Deduplicate entries based on link (same logic as renderFeedEntries)
+                const uniqueEntries = feedEntries.filter((entry, index, arr) => {
+                    // Primary deduplication: by link
+                    if (entry.link) {
+                        return arr.findIndex(e => e.link === entry.link) === index;
+                    }
+                    
+                    // Fallback deduplication: by title if no link
+                    if (entry.title) {
+                        return arr.findIndex(e => e.title === entry.title) === index;
+                    }
+                    
+                    return true;
+                });
+                
+                // Calculate unique sources from unique entries
+                const uniqueSources = new Set();
+                uniqueEntries.forEach(entry => {
+                    if (entry.link) {
+                        try {
+                            const url = new URL(entry.link);
+                            uniqueSources.add(url.hostname);
+                        } catch (e) {
+                            // If URL parsing fails, use the full link as source
+                            uniqueSources.add(entry.link);
+                        }
+                    }
+                });
+                
+                const entriesCount = uniqueEntries.length;
+                const sourcesCount = uniqueSources.size;
                 
                 // Update the sources info in the UI
-                const topicMetaElement = document.querySelector(`.topic-meta[data-topic-id="${topic.tag_id}"] .sources-info`);
                 if (topicMetaElement) {
-                    if (sourcesCount > 0) {
+                    if (entriesCount > 0) {
+                        const sourceText = `${entriesCount} ${entriesCount === 1 ? 'source' : 'sources'}`;
                         const lastUpdatedText = topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}` : '';
-                        topicMetaElement.innerHTML = `${sourcesCount} ${sourcesCount === 1 ? 'source' : 'sources'}${lastUpdatedText}`;
+                        topicMetaElement.innerHTML = `${sourceText}${lastUpdatedText}`;
                     } else {
-                        // Hide sources info when no data
-                        topicMetaElement.innerHTML = topic.last_updated ? `Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        // Show no entries available
+                        const lastUpdatedText = topic.last_updated ? `Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        topicMetaElement.innerHTML = lastUpdatedText || 'No entries yet';
                     }
                 }
             } catch (error) {
-                console.error(`Failed to fetch details for topic ${topic.tag_id}:`, error);
-                // Fall back to cached count
-                const topicMetaElement = document.querySelector(`.topic-meta[data-topic-id="${topic.tag_id}"] .sources-info`);
-                if (topicMetaElement) {
-                    const lastUpdatedText = topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}` : '';
-                    topicMetaElement.innerHTML = `${topic.link_count || 0} ${(topic.link_count || 0) === 1 ? 'source' : 'sources'}${lastUpdatedText}`;
+                // Silently handle HTTP 500 errors and other API issues
+                if (error.message.includes('HTTP 500') || error.message.includes('HTTP 404')) {
+                    // For server errors, show fallback info without logging error
+                    if (topicMetaElement) {
+                        const lastUpdatedText = topic.last_updated ? `Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        topicMetaElement.innerHTML = lastUpdatedText || 'Data unavailable';
+                    }
+                } else {
+                    // For other errors, log but still show fallback
+                    console.warn(`Could not fetch details for topic ${topic.tag_name || topic.tag_id}:`, error.message);
+                    if (topicMetaElement) {
+                        const fallbackCount = topic.link_count || 0;
+                        const lastUpdatedText = topic.last_updated ? `, Updated ${this.formatActualDate(topic.last_updated)}` : '';
+                        
+                        if (fallbackCount > 0) {
+                            topicMetaElement.innerHTML = `${fallbackCount} ${fallbackCount === 1 ? 'source' : 'sources'}${lastUpdatedText}`;
+                        } else {
+                            topicMetaElement.innerHTML = lastUpdatedText || 'No data available';
+                        }
+                    }
                 }
             }
         }
@@ -565,8 +631,23 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             return;
         }
 
+        // Deduplicate entries based on link (primary) and title (fallback)
+        const uniqueEntries = feedEntries.filter((entry, index, arr) => {
+            // Primary deduplication: by link
+            if (entry.link) {
+                return arr.findIndex(e => e.link === entry.link) === index;
+            }
+            
+            // Fallback deduplication: by title if no link
+            if (entry.title) {
+                return arr.findIndex(e => e.title === entry.title) === index;
+            }
+            
+            return true;
+        });
+
         // Sort entries by published date (latest first)
-        const sortedEntries = [...feedEntries].sort((a, b) => {
+        const sortedEntries = [...uniqueEntries].sort((a, b) => {
             const dateA = new Date(a.published_date);
             const dateB = new Date(b.published_date);
             return dateB - dateA;
@@ -732,26 +813,70 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         try {
             console.log('Loading horizon content...');
             
+            // Show loading state
+            this.showPartnerDashboardLoading();
+            
             // Load horizon dashboard data from extension API  
             const keywords = await this.apiCall('/extension/horizon/keywords');
+            console.log('Raw keywords from main endpoint:', keywords.map(k => ({
+                keyword: k.keyword,
+                keyword_id: k.keyword_id,
+                frequency: k.frequency,
+                frequencyType: typeof k.frequency
+            })));
+            
+            // Enhanced frequency handling: use main endpoint data if available, fallback to details endpoint
+            const keywordsWithFrequency = await Promise.all(keywords.map(async (keyword) => {
+                // First check if frequency is already available from main endpoint
+                if (keyword.frequency && keyword.frequency !== 'undefined') {
+                    return {
+                        ...keyword,
+                        frequency: keyword.frequency
+                    };
+                }
+                
+                // Fallback: fetch from individual details endpoint if main endpoint doesn't have frequency
+                try {
+                    const details = await this.apiCall(`/extension/horizon/keywords/${keyword.keyword_id}/details`);
+                    const fetchedFrequency = details.frequency || 'daily';
+                    return {
+                        ...keyword,
+                        frequency: fetchedFrequency
+                    };
+                } catch (error) {
+                    console.warn(`Could not fetch frequency details for ${keyword.keyword} (ID: ${keyword.keyword_id}):`, error);
+                    // Check if it's a 503 error specifically
+                    if (error.message && error.message.includes('503')) {
+                        console.warn(`Service unavailable for ${keyword.keyword}, using default frequency`);
+                    }
+                    return {
+                        ...keyword,
+                        frequency: 'daily' // Fallback to daily if details fetch fails
+                    };
+                }
+            }));
+            
             
             // Transform keywords data to dashboard format
             const horizonData = {
-                total_keywords: keywords.length,
+                total_keywords: keywordsWithFrequency.length,
                 summaries_today: 0, // Always show 0 as requested
-                recent_meta_summaries: keywords.filter(k => k.meta_summary && k.meta_summary !== `No summaries available for '${k.keyword}'`)
+                recent_meta_summaries: keywordsWithFrequency.filter(k => k.meta_summary && k.meta_summary !== `No summaries available for '${k.keyword}'`)
             };
             this.renderHorizonDashboard(horizonData);
             
-            // Render keywords list using the same data
-            this.renderKeywordsList(keywords);
+            // Render keywords list using the frequency-enhanced data
+            this.renderKeywordsList(keywordsWithFrequency);
             
-            // Store keywords data for partner search
-            this.allPartners = keywords;
+            // Store frequency-enhanced keywords data for partner search
+            this.allPartners = keywordsWithFrequency;
             
         } catch (error) {
             console.error('Failed to load horizon content:', error);
             this.showError('Failed to load Horizon Watch data');
+        } finally {
+            // Hide loading state
+            this.hidePartnerDashboardLoading();
         }
     }
 
@@ -822,6 +947,7 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             // If dates are equal, sort by keyword name
             return a.keyword.localeCompare(b.keyword);
         });
+        
         
         container.innerHTML = `
             ${sortedKeywords.map((keyword, index) => {
@@ -1447,8 +1573,24 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     isEpochDate(dateString) {
         try {
             const date = new Date(dateString);
-            // Check if it's Jan 1, 1970 (epoch) or invalid date
-            return isNaN(date.getTime()) || date.getTime() === 0;
+            const now = new Date();
+            
+            // Check if it's invalid date
+            if (isNaN(date.getTime())) {
+                return true;
+            }
+            
+            // Check if it's Jan 1, 1970 (epoch)
+            if (date.getTime() === 0) {
+                return true;
+            }
+            
+            // Check if it's in the future (reject future dates like 31stDec9999)
+            if (date > now) {
+                return true;
+            }
+            
+            return false;
         } catch (error) {
             return true;
         }
@@ -1990,7 +2132,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         
         // Filter partner cards only
         const partnerCards = document.querySelectorAll('.partner-card');
-        console.log('Found partner cards:', partnerCards.length);
         
         partnerCards.forEach(card => {
             const itemKind = card.getAttribute('data-kind');
@@ -2029,7 +2170,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         try {
             // Get all partners for filtering - they're loaded when horizon data loads
             if (!this.allPartners) {
-                console.log('No partner data loaded yet');
                 this.hidePartnerSuggestions();
                 return;
             }
@@ -2125,7 +2265,18 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     // Topics Search Methods
     async handleTopicsSearch(query) {
         try {
-            // Get all topics for filtering
+            // Filter the dashboard topics if we have them
+            if (this.originalTopicSummaries) {
+                if (!query.trim()) {
+                    // Show all subscribed topics when no query
+                    this.renderTopicSummaries(this.originalTopicSummaries);
+                } else {
+                    // Filter subscribed topics
+                    this.filterAndRenderTopics(query);
+                }
+            }
+
+            // Get all topics for search suggestions dropdown
             if (!this.allTopics) {
                 await this.loadAllTopics();
             }
@@ -2143,6 +2294,33 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             await this.showTopicsSuggestions(filteredTopics.slice(0, 10)); // Show top 10 matches
         } catch (error) {
             console.error('Topics search failed:', error);
+        }
+    }
+
+    filterAndRenderTopics(query) {
+        if (!this.originalTopicSummaries) {
+            return;
+        }
+
+        const filteredSummaries = this.originalTopicSummaries.filter(topic => 
+            topic.tag_name.toLowerCase().includes(query.toLowerCase()) ||
+            (topic.meta_summary && topic.meta_summary.toLowerCase().includes(query.toLowerCase()))
+        );
+
+        this.renderTopicSummaries(filteredSummaries);
+        
+        // Show a message if no results found
+        const container = document.getElementById('tag-summaries');
+        const emptyState = document.getElementById('empty-state');
+        
+        if (filteredSummaries.length === 0 && this.originalTopicSummaries.length > 0) {
+            container.innerHTML = `
+                <div class="filter-no-results">
+                    <p>No subscribed topics match "${this.escapeHtml(query)}"</p>
+                    <p class="filter-suggestion">Try searching for new topics to subscribe to in the dropdown above.</p>
+                </div>
+            `;
+            emptyState.classList.add('hidden');
         }
     }
 
@@ -2305,7 +2483,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
     async showPartnerDetails(keywordId) {
         try {
-            console.log(`Loading partner details for: ${keywordId}`);
             this.showScreen('partner-details');
             
             // Load keyword details from extension API
@@ -2327,7 +2504,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                     });
                 });
             } else {
-                console.log('No feed entries found in partner details');
             }
             
             // Validate response
@@ -3043,6 +3219,65 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         }
     }
 
+    showPartnerDashboardLoading() {
+        const container = document.getElementById('partners-list');
+        if (container) {
+            // Add loading overlay to partner dashboard content
+            const overlay = document.createElement('div');
+            overlay.id = 'partner-dashboard-loading';
+            overlay.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(255, 255, 255, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 100;
+                border-radius: 8px;
+            `;
+            
+            overlay.innerHTML = `
+                <div class="loading-content" style="text-align: center;">
+                    <div class="loading-spinner" style="margin-bottom: 12px;">
+                        <div class="spinner"></div>
+                    </div>
+                    <p style="margin: 0; color: #6b7280; font-size: 14px;">Loading partners...</p>
+                </div>
+            `;
+            
+            // Ensure spinner styles exist
+            if (!document.getElementById('partner-loading-spinner-styles')) {
+                const style = document.createElement('style');
+                style.id = 'partner-loading-spinner-styles';
+                style.textContent = `
+                    .loading-spinner .spinner {
+                        width: 20px;
+                        height: 20px;
+                        border: 2px solid #e5e7eb;
+                        border-top: 2px solid #3b82f6;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                        margin: 0 auto;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            container.style.position = 'relative';
+            container.appendChild(overlay);
+        }
+    }
+
+    hidePartnerDashboardLoading() {
+        const overlay = document.getElementById('partner-dashboard-loading');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+
     async refreshAfterSubscriptionChange(source) {
         // Clear cache to force fresh data
         this.cache.clear();
@@ -3073,11 +3308,20 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
     async refreshPartnerData() {
         try {
-            console.log('Refreshing partner data...');
+            // Show loading state
+            this.showPartnerDashboardLoading();
             
             // Clear cache for horizon keywords to force fresh data
             const horizonUrl = `${this.apiBaseUrl}/extension/horizon/keywords`;
             this.cache.delete(horizonUrl);
+            
+            // Clear cache for all keyword detail endpoints (for frequency data)
+            const keywordDetailPattern = '/extension/horizon/keywords/';
+            for (const [url] of this.cache) {
+                if (url.includes(keywordDetailPattern)) {
+                    this.cache.delete(url);
+                }
+            }
             
             // Reload the horizon data
             await this.loadHorizonData();
@@ -3086,6 +3330,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         } catch (error) {
             console.error('Failed to refresh partner data:', error);
             this.showToast('Failed to refresh partner data', 'error');
+        } finally {
+            // Hide loading state
+            this.hidePartnerDashboardLoading();
         }
     }
 
@@ -3166,9 +3413,22 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     showEditPartnerModal(keywordId, keywordName, frequency) {
         this.currentEditingKeywordId = keywordId;
         
+        // Debug logging
+        console.log('Edit Partner Modal:', {
+            keywordId,
+            keywordName,
+            frequency,
+            frequencyType: typeof frequency,
+            frequencyAfterDefault: frequency || 'daily'
+        });
+        
         // Populate the form with current values
         document.getElementById('edit-partner-input').value = keywordName;
-        document.getElementById('edit-frequency-select').value = frequency || 'daily';
+        const frequencySelect = document.getElementById('edit-frequency-select');
+        const finalFrequency = frequency || 'daily';
+        
+        
+        frequencySelect.value = finalFrequency;
         
         // Clear any previous error messages
         const errorElement = document.getElementById('edit-partner-input-error');
@@ -3367,7 +3627,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             }
         });
         
-        console.log(`Filtered partner cards by sentiment: ${sentiment}`);
     }
 }
 
