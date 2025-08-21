@@ -813,6 +813,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         try {
             console.log('Loading horizon content...');
             
+            // Show loading state
+            this.showPartnerDashboardLoading();
+            
             // Load horizon dashboard data from extension API  
             const keywords = await this.apiCall('/extension/horizon/keywords');
             console.log('Raw keywords from main endpoint:', keywords.map(k => ({
@@ -826,7 +829,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             const keywordsWithFrequency = await Promise.all(keywords.map(async (keyword) => {
                 // First check if frequency is already available from main endpoint
                 if (keyword.frequency && keyword.frequency !== 'undefined') {
-                    console.log(`Using frequency from main endpoint for ${keyword.keyword}: ${keyword.frequency}`);
                     return {
                         ...keyword,
                         frequency: keyword.frequency
@@ -835,10 +837,8 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 
                 // Fallback: fetch from individual details endpoint if main endpoint doesn't have frequency
                 try {
-                    console.log(`Fetching frequency details for ${keyword.keyword} (keyword_id: ${keyword.keyword_id})`);
                     const details = await this.apiCall(`/extension/horizon/keywords/${keyword.keyword_id}/details`);
                     const fetchedFrequency = details.frequency || 'daily';
-                    console.log(`Fetched frequency for ${keyword.keyword}: ${fetchedFrequency}`);
                     return {
                         ...keyword,
                         frequency: fetchedFrequency
@@ -856,10 +856,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 }
             }));
             
-            console.log('Keywords with frequency data:', keywordsWithFrequency.map(k => ({
-                keyword: k.keyword,
-                frequency: k.frequency
-            })));
             
             // Transform keywords data to dashboard format
             const horizonData = {
@@ -878,6 +874,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         } catch (error) {
             console.error('Failed to load horizon content:', error);
             this.showError('Failed to load Horizon Watch data');
+        } finally {
+            // Hide loading state
+            this.hidePartnerDashboardLoading();
         }
     }
 
@@ -949,13 +948,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             return a.keyword.localeCompare(b.keyword);
         });
         
-        // Debug: Log frequency data for each keyword
-        console.log('Partner frequency debug:', sortedKeywords.map(k => ({
-            keyword: k.keyword,
-            frequency: k.frequency,
-            frequencyType: typeof k.frequency,
-            keyword_id: k.keyword_id
-        })));
         
         container.innerHTML = `
             ${sortedKeywords.map((keyword, index) => {
@@ -2140,7 +2132,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         
         // Filter partner cards only
         const partnerCards = document.querySelectorAll('.partner-card');
-        console.log('Found partner cards:', partnerCards.length);
         
         partnerCards.forEach(card => {
             const itemKind = card.getAttribute('data-kind');
@@ -2179,7 +2170,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         try {
             // Get all partners for filtering - they're loaded when horizon data loads
             if (!this.allPartners) {
-                console.log('No partner data loaded yet');
                 this.hidePartnerSuggestions();
                 return;
             }
@@ -2493,7 +2483,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
     async showPartnerDetails(keywordId) {
         try {
-            console.log(`Loading partner details for: ${keywordId}`);
             this.showScreen('partner-details');
             
             // Load keyword details from extension API
@@ -2515,7 +2504,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                     });
                 });
             } else {
-                console.log('No feed entries found in partner details');
             }
             
             // Validate response
@@ -3231,6 +3219,65 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         }
     }
 
+    showPartnerDashboardLoading() {
+        const container = document.getElementById('partners-list');
+        if (container) {
+            // Add loading overlay to partner dashboard content
+            const overlay = document.createElement('div');
+            overlay.id = 'partner-dashboard-loading';
+            overlay.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(255, 255, 255, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 100;
+                border-radius: 8px;
+            `;
+            
+            overlay.innerHTML = `
+                <div class="loading-content" style="text-align: center;">
+                    <div class="loading-spinner" style="margin-bottom: 12px;">
+                        <div class="spinner"></div>
+                    </div>
+                    <p style="margin: 0; color: #6b7280; font-size: 14px;">Loading partners...</p>
+                </div>
+            `;
+            
+            // Ensure spinner styles exist
+            if (!document.getElementById('partner-loading-spinner-styles')) {
+                const style = document.createElement('style');
+                style.id = 'partner-loading-spinner-styles';
+                style.textContent = `
+                    .loading-spinner .spinner {
+                        width: 20px;
+                        height: 20px;
+                        border: 2px solid #e5e7eb;
+                        border-top: 2px solid #3b82f6;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                        margin: 0 auto;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            container.style.position = 'relative';
+            container.appendChild(overlay);
+        }
+    }
+
+    hidePartnerDashboardLoading() {
+        const overlay = document.getElementById('partner-dashboard-loading');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+
     async refreshAfterSubscriptionChange(source) {
         // Clear cache to force fresh data
         this.cache.clear();
@@ -3261,7 +3308,8 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
 
     async refreshPartnerData() {
         try {
-            console.log('Refreshing partner data...');
+            // Show loading state
+            this.showPartnerDashboardLoading();
             
             // Clear cache for horizon keywords to force fresh data
             const horizonUrl = `${this.apiBaseUrl}/extension/horizon/keywords`;
@@ -3282,6 +3330,9 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         } catch (error) {
             console.error('Failed to refresh partner data:', error);
             this.showToast('Failed to refresh partner data', 'error');
+        } finally {
+            // Hide loading state
+            this.hidePartnerDashboardLoading();
         }
     }
 
@@ -3376,11 +3427,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         const frequencySelect = document.getElementById('edit-frequency-select');
         const finalFrequency = frequency || 'daily';
         
-        console.log('Setting frequency select:', {
-            element: frequencySelect,
-            value: finalFrequency,
-            availableOptions: Array.from(frequencySelect.options).map(opt => opt.value)
-        });
         
         frequencySelect.value = finalFrequency;
         
@@ -3581,7 +3627,6 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
             }
         });
         
-        console.log(`Filtered partner cards by sentiment: ${sentiment}`);
     }
 }
 

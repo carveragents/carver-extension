@@ -13,7 +13,7 @@ html, body {
     height: 100vh;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    overflow: auto;
     font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 12px;
     font-weight: 400;
@@ -57,7 +57,7 @@ html, body {
     border-radius: 12px;
     width: 90%;
     max-width: 500px;
-    max-height: 80vh;
+    max-height: 120vh;
     margin: auto 0;
     overflow: hidden;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
@@ -98,7 +98,7 @@ html, body {
 
 .modal-body {
     padding: 24px;
-    max-height: 60vh;
+    max-height: 90vh;
     overflow-y: auto;
 }
 
@@ -2865,10 +2865,19 @@ select:focus-visible {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 20px 40px;
+    padding: max(16px, calc((100vh - 600px) / 2)) 40px;
     background: #ffffff;
     /* Minimal platform fixes */
     box-sizing: border-box;
+    overflow-y: auto;
+}
+
+/* Responsive behavior for smaller screens */
+@media (max-height: 650px) {
+    .login-container {
+        justify-content: flex-start;
+        padding: 16px 40px;
+    }
 }
 
 .login-header {
