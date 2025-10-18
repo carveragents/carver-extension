@@ -1239,6 +1239,46 @@ select:focus {
 .partner-status.active { background: #059669; color: white; }
 .partner-status.inactive { background: #9ca3af; color: white; }
 
+/* Topics Statistics Styles */
+.topics-stats {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.topics-stats .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.topics-stats .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1;
+}
+
+.topics-stats .stat-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #6b7280;
+    text-align: center;
+}
+
+.topics-stats .stat-divider {
+    width: 1px;
+    height: 40px;
+    background: #e5e7eb;
+}
+
 /* RSS Topics Search Styles */
 .topics-header {
     display: flex;
