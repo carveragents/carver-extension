@@ -310,7 +310,8 @@ class RegulatoryMonitorSidePanel {
             const response = await fetch(`${this.apiBaseUrl}/auth/validate-key`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apiKey
                 },
                 body: JSON.stringify({
                     api_key: apiKey
