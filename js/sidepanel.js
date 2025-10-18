@@ -310,7 +310,8 @@ class RegulatoryMonitorSidePanel {
             const response = await fetch(`${this.apiBaseUrl}/auth/validate-key`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apiKey
                 },
                 body: JSON.stringify({
                     api_key: apiKey
@@ -384,14 +385,21 @@ class RegulatoryMonitorSidePanel {
     renderTopicSummaries(summaries) {
         const container = document.getElementById('tag-summaries');
         const emptyState = document.getElementById('empty-state');
-        
+        const statsContainer = document.getElementById('topics-stats');
+
         if (!summaries || summaries.length === 0) {
             container.innerHTML = '';
             emptyState.classList.remove('hidden');
+            if (statsContainer) {
+                statsContainer.classList.add('hidden');
+            }
             return;
         }
 
         emptyState.classList.add('hidden');
+
+        // Calculate and display statistics
+        this.updateTopicsStatistics(summaries);
         
         // Sort topics: subscribed first (green color), then by last updated date (latest first)
         const sortedSummaries = [...summaries].sort((a, b) => {
@@ -553,6 +561,39 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
                 }
             }
         }
+    }
+
+    updateTopicsStatistics(summaries) {
+        const statsContainer = document.getElementById('topics-stats');
+        const totalTopicsCount = document.getElementById('total-topics-count');
+        const updatedTopicsCount = document.getElementById('updated-topics-count');
+
+        if (!statsContainer || !totalTopicsCount || !updatedTopicsCount) {
+            return;
+        }
+
+        // Use original summaries for statistics if available (to show total, not filtered count)
+        const dataForStats = this.originalTopicSummaries || summaries;
+
+        // Calculate total topics
+        const totalCount = dataForStats.length;
+
+        // Calculate topics updated in the last week
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+        const updatedThisWeek = dataForStats.filter(topic => {
+            if (!topic.last_updated) return false;
+            const lastUpdated = new Date(topic.last_updated);
+            return lastUpdated >= oneWeekAgo;
+        }).length;
+
+        // Update the display
+        totalTopicsCount.textContent = totalCount;
+        updatedTopicsCount.textContent = updatedThisWeek;
+
+        // Show the stats container
+        statsContainer.classList.remove('hidden');
     }
 
     async showTopicDetails(topicId) {
