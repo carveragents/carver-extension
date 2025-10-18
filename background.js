@@ -4,11 +4,13 @@ class BackgroundService {
         //this.apiHost = 'http://localhost:8000'; // Default to local development
         this.apiHost = 'https://staging.carveragents.ai'; // Default to staging
         //this.apiHost = 'https://app.carveragents.ai'; // Default to production
-        this.apiBaseUrl = `${this.apiHost}/api/v1`;
+        this.apiV2BaseUrl = `${this.apiHost}/api/v2`;
         this.refreshInterval = 15 * 60 * 1000; // 15 minutes
         this.alarmName = 'regulatoryMonitorRefresh';
-        // No complex state tracking needed for edge trigger approach
-        
+
+        // Initialize auth service for background operations
+        this.authService = null;
+
         this.init();
     }
 
@@ -17,12 +19,25 @@ class BackgroundService {
             const result = await chrome.storage.local.get(['apiHost']);
             if (result.apiHost) {
                 this.apiHost = result.apiHost;
-                this.apiBaseUrl = `${this.apiHost}/api/v1`;
+                this.apiV2BaseUrl = `${this.apiHost}/api/v2`;
                 console.log('Background service using host:', this.apiHost);
             }
         } catch (error) {
             console.error('Failed to load host configuration:', error);
             // Continue with default host
+        }
+    }
+
+    async importAuthService() {
+        // Import the auth service in background script context
+        try {
+            await chrome.scripting.executeScript({
+                target: { tabId: chrome.tabs.TAB_ID_NONE },
+                files: ['js/auth.js']
+            });
+        } catch (error) {
+            // For background scripts, we'll use a simplified version
+            console.log('Using simplified auth service for background script');
         }
     }
 
@@ -86,19 +101,47 @@ class BackgroundService {
         console.log('Carver Agents background service initialized');
     }
 
+    async checkAuthenticationStatus() {
+        try {
+            const result = await chrome.storage.local.get(['jwt_token', 'authenticated', 'authTime']);
+
+            if (!result.authenticated || !result.jwt_token) {
+                return { isAuthenticated: false };
+            }
+
+            // Check if token is expired (24 hours)
+            const tokenAge = Date.now() - (result.authTime || 0);
+            const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+            if (tokenAge > maxAge) {
+                console.log('Token expired in background, clearing auth data');
+                await chrome.storage.local.remove(['jwt_token', 'user', 'authenticated', 'authTime']);
+                return { isAuthenticated: false };
+            }
+
+            return {
+                isAuthenticated: true,
+                jwt_token: result.jwt_token
+            };
+        } catch (error) {
+            console.error('Failed to check authentication status:', error);
+            return { isAuthenticated: false };
+        }
+    }
+
     async performBackgroundSync() {
         try {
             console.log('Performing background sync...');
-            
-            // Get stored API key
-            const result = await chrome.storage.local.get(['apiKey']);
-            if (!result.apiKey) {
-                console.log('No API key found, skipping sync');
+
+            // Check authentication status
+            const authStatus = await this.checkAuthenticationStatus();
+            if (!authStatus.isAuthenticated) {
+                console.log('User not authenticated, skipping sync');
                 return;
             }
 
             // Check for new updates
-            const hasUpdates = await this.checkForUpdates(result.apiKey);
+            const hasUpdates = await this.checkForUpdates(authStatus.jwt_token);
             
             if (hasUpdates) {
                 // Update badge to show new content
@@ -122,11 +165,11 @@ class BackgroundService {
         }
     }
 
-    async checkForUpdates(apiKey) {
+    async checkForUpdates(jwtToken) {
         try {
             // Get user's subscriptions
             const subscriptions = await this.apiCall('/extension/subscriptions', {
-                headers: { 'X-API-Key': apiKey }
+                headers: { 'Authorization': `Bearer ${jwtToken}` }
             });
 
             if (!subscriptions || subscriptions.length === 0) {
@@ -144,7 +187,7 @@ class BackgroundService {
                 if (subscription.subscription_type === 'topic') {
                     const topicDetails = await this.apiCall(
                         `/extension/topics/${subscription.subscription_value}/details?limit=5`,
-                        { headers: { 'X-API-Key': apiKey } }
+                        { headers: { 'Authorization': `Bearer ${jwtToken}` } }
                     );
 
                     // Check if there are new feed entries since last sync
@@ -321,7 +364,7 @@ class BackgroundService {
             
             // Perform any necessary migrations
             // Clear cache to ensure fresh data with new version
-            const userData = await chrome.storage.local.get(['apiKey', 'userInfo']);
+            const userData = await chrome.storage.local.get(['jwt_token', 'user', 'authenticated']);
             await chrome.storage.local.clear();
             await chrome.storage.local.set(userData);
 
@@ -331,24 +374,36 @@ class BackgroundService {
     }
 
     async apiCall(endpoint, options = {}) {
-        const url = `${this.apiBaseUrl}${endpoint}`;
-        
+        const url = `${this.apiV2BaseUrl}${endpoint}`;
+
         const defaultOptions = {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
             }
         };
-        
+
         const finalOptions = { ...defaultOptions, ...options };
-        
+
+        // Merge headers properly
+        if (options.headers) {
+            finalOptions.headers = { ...defaultOptions.headers, ...options.headers };
+        }
+
         try {
             const response = await fetch(url, finalOptions);
-            
+
+            // Handle 401 Unauthorized - token expired
+            if (response.status === 401) {
+                console.log('Token expired in background, clearing auth data');
+                await chrome.storage.local.remove(['jwt_token', 'user', 'authenticated', 'authTime']);
+                throw new Error('Authentication expired');
+            }
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-            
+
             return await response.json();
         } catch (error) {
             console.error('Background API call failed:', error);

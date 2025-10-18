@@ -1,13 +1,13 @@
 // Chrome Extension Side Panel JavaScript
 class RegulatoryMonitorSidePanel {
     constructor() {
-        this.apiKey = null;
+        this.authService = null;
         this.currentUser = null;
         this.currentScreen = 'loading';
         //this.apiHost = 'http://localhost:8000'; // Default to local development
         this.apiHost = 'https://staging.carveragents.ai'; // Default to staging
         //this.apiHost = 'https://app.carveragents.ai'; // Default to production
-        this.apiBaseUrl = `${this.apiHost}/api/v1`;
+        this.apiV2BaseUrl = `${this.apiHost}/api/v2`;
         this.cache = new Map();
         this.retryCount = 0;
         this.maxRetries = 3;
@@ -21,37 +21,35 @@ class RegulatoryMonitorSidePanel {
     async init() {
         try {
             console.log('Initializing side panel...');
+
+            // Initialize auth service
+            this.authService = new AuthService();
+            await this.authService.init();
+
             this.setupEventListeners();
-            
-            // Check for existing API key and host
-            const result = await chrome.storage.local.get(['apiKey', 'userInfo', 'apiHost']);
-            console.log('Storage result:', result);
-            
-            // Load host configuration from storage, default to production
-            if (result.apiHost && !result.apiHost.includes('localhost')) {
-                this.apiHost = result.apiHost;
-                this.apiBaseUrl = `${this.apiHost}/api/v1`;
+
+            // Set up message listeners for authentication events
+            if (chrome.runtime && chrome.runtime.onMessage) {
+                chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+                    this.handleAuthMessage(message);
+                });
             }
-            
-            // Always update storage to reflect current host (migrate from localhost if needed)
-            await chrome.storage.local.set({ apiHost: this.apiHost });
-            
-            // Set the host dropdown to current host
-            const hostSelect = document.getElementById('host-select');
-            if (hostSelect) {
-                hostSelect.value = this.apiHost;
-            }
-            
-            if (result.apiKey) {
-                console.log('Found existing API key, validating...');
-                this.apiKey = result.apiKey;
-                // Don't use cached userInfo - always get fresh data from API validation
-                await this.validateApiKey();
-                // Only switch to regulatory tab if we have a valid API key
+
+            // Check authentication status
+            const isAuthenticated = await this.authService.isAuthenticated();
+            console.log('Authentication status:', isAuthenticated);
+
+            // Load host configuration from storage
+            await this.loadHostConfiguration();
+
+            if (isAuthenticated) {
+                console.log('User is authenticated, loading main interface...');
+                this.currentUser = await this.authService.getCurrentUser();
+                // Switch to main dashboard
                 this.switchTab('regulatory');
             } else {
-                console.log('No API key found, showing setup screen');
-                this.showScreen('api-key-setup');
+                console.log('User not authenticated, showing login screen');
+                this.showLoginScreen();
             }
         } catch (error) {
             console.error('Initialization error:', error);
@@ -59,8 +57,55 @@ class RegulatoryMonitorSidePanel {
         }
     }
 
+    async loadHostConfiguration() {
+        try {
+            const result = await chrome.storage.local.get(['apiHost']);
+            if (result.apiHost && !result.apiHost.includes('localhost')) {
+                this.apiHost = result.apiHost;
+                this.apiV2BaseUrl = `${this.apiHost}/api/v2`;
+            }
+
+            // Always update storage to reflect current host
+            await chrome.storage.local.set({ apiHost: this.apiHost });
+
+            // Set the host dropdown to current host
+            const hostSelect = document.getElementById('host-select');
+            if (hostSelect) {
+                hostSelect.value = this.apiHost;
+            }
+        } catch (error) {
+            console.error('Failed to load host configuration:', error);
+        }
+    }
+
+    showLoginScreen() {
+        // Show login redirect screen instead of directly redirecting
+        this.showScreen('login-redirect');
+    }
+
+    handleAuthMessage(message) {
+        // Handle messages from login page or background script
+        switch (message.action) {
+            case 'authSuccess':
+                console.log('Authentication successful, reloading interface...');
+                this.init(); // Reinitialize to check new auth status
+                break;
+            case 'authFailure':
+                console.log('Authentication failed');
+                this.showError('Authentication failed. Please try again.');
+                break;
+            default:
+                break;
+        }
+    }
+
     setupEventListeners() {
-        // API Key setup
+        // Login redirect
+        document.getElementById('go-to-login')?.addEventListener('click', () => {
+            window.location.href = 'login.html';
+        });
+
+        // Legacy API Key setup (keeping for backwards compatibility)
         document.getElementById('validate-api-key')?.addEventListener('click', () => this.handleApiKeyValidation());
         document.getElementById('api-key-input')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.handleApiKeyValidation();
@@ -171,7 +216,7 @@ class RegulatoryMonitorSidePanel {
         });
         document.getElementById('subscriptions-btn')?.addEventListener('click', () => this.showSubscriptions());
         document.getElementById('refresh-btn')?.addEventListener('click', () => this.refreshData());
-        document.getElementById('settings-btn')?.addEventListener('click', () => this.showScreen('settings-screen'));
+        document.getElementById('settings-btn')?.addEventListener('click', () => this.showSettingsScreen());
         
         // Support Modal Event Listeners
         document.getElementById('support-btn')?.addEventListener('click', () => this.showSupportModal());
@@ -281,7 +326,7 @@ class RegulatoryMonitorSidePanel {
             this.apiHost = selectedHost;
             this.apiBaseUrl = `${this.apiHost}/api/v1`;
             
-            const isValid = await this.validateApiKey(apiKey);
+            const isValid = await this.validateAuthentication();
             
             if (isValid) {
                 // Store API key, user info, and selected host
@@ -305,41 +350,26 @@ class RegulatoryMonitorSidePanel {
         }
     }
 
-    async validateApiKey(apiKey = this.apiKey) {
+    async validateAuthentication() {
         try {
-            const response = await fetch(`${this.apiBaseUrl}/auth/validate-key`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    api_key: apiKey
-                })
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                if (result.valid && result.user) {
-                    this.currentUser = result.user;
-                    
-                    // Debug logging to see what user object contains
-                    console.log('User object from API validation:', result.user);
-                    console.log('User ID field:', result.user.id);
-                    console.log('All user object keys:', Object.keys(result.user));
-                    
-                    // Update user info in UI
-                    const userNameElement = document.getElementById('user-name');
-                    if (userNameElement && result.user.name) {
-                        userNameElement.textContent = result.user.name;
-                    }
-                    
-                    return true;
+            const isAuthenticated = await this.authService.isAuthenticated();
+            if (isAuthenticated) {
+                this.currentUser = await this.authService.getCurrentUser();
+
+                // Debug logging
+                console.log('User object from auth service:', this.currentUser);
+
+                // Update user info in UI
+                const userNameElement = document.getElementById('user-name');
+                if (userNameElement && this.currentUser?.display_name) {
+                    userNameElement.textContent = this.currentUser.display_name;
                 }
+
+                return true;
             }
-            
             return false;
         } catch (error) {
-            console.error('API key validation failed:', error);
+            console.error('Authentication validation failed:', error);
             return false;
         }
     }
@@ -1243,18 +1273,24 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
     }
 
     async logout() {
-        await chrome.storage.local.clear();
-        this.apiKey = null;
-        this.currentUser = null;
-        this.cache.clear();
-        this.showScreen('api-key-setup');
-        this.showToast('Logged out successfully', 'success');
+        try {
+            await this.authService.logout();
+            this.currentUser = null;
+            this.cache.clear();
+            this.showLoginScreen();
+            this.showToast('Logged out successfully', 'success');
+        } catch (error) {
+            console.error('Logout error:', error);
+            // Even if logout fails, clear local state
+            this.currentUser = null;
+            this.showLoginScreen();
+        }
     }
 
     async handleHostChange(newHost) {
         // Update the host and base URL
         this.apiHost = newHost;
-        this.apiBaseUrl = `${this.apiHost}/api/v1`;
+        this.apiV2BaseUrl = `${this.apiHost}/api/v2`;
         
         // Save the new host to storage
         await chrome.storage.local.set({ apiHost: newHost });
@@ -1351,46 +1387,54 @@ ${this.escapeHtml(this.cleanSummaryText(topic.meta_summary))}
         }
     }
 
-    // API call method with proper headers and caching
+    // API call method using auth service
     async apiCall(endpoint, options = {}) {
-        const url = `${this.apiBaseUrl}${endpoint}`;
-        
-        // Check cache first for GET requests
-        if (!options.method || options.method === 'GET') {
-            const cached = this.cache.get(url);
-            if (cached && Date.now() - cached.timestamp < 300000) { // 5 minutes cache
-                return cached.data;
-            }
-        }
-        
-        const defaultOptions = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-API-Key': this.apiKey
-            }
-        };
-        
-        const finalOptions = { ...defaultOptions, ...options };
-        
         try {
-            const response = await fetch(url, finalOptions);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            
-            // Cache successful GET requests
-            if (!options.method || options.method === 'GET') {
-                this.cache.set(url, { data, timestamp: Date.now() });
-            }
-            
-            return data;
+            // Use auth service for authenticated requests
+            return await this.authService.makeAuthenticatedRequest(endpoint, options);
         } catch (error) {
             console.error('API call failed:', error);
+
+            // Handle authentication errors
+            if (error.message.includes('Authentication expired') || error.message.includes('Not authenticated')) {
+                console.log('Authentication error, redirecting to login...');
+                this.showLoginScreen();
+            }
+
             throw error;
+        }
+    }
+
+    async showSettingsScreen() {
+        try {
+            // Update user profile information
+            if (this.currentUser) {
+                const userNameElement = document.getElementById('user-profile-name');
+                const userEmailElement = document.getElementById('user-profile-email');
+                const userRoleElement = document.getElementById('user-role');
+                const authStatusElement = document.getElementById('auth-status-text');
+
+                if (userNameElement) {
+                    userNameElement.textContent = this.currentUser.display_name || this.currentUser.displayName || 'User';
+                }
+
+                if (userEmailElement) {
+                    userEmailElement.textContent = this.currentUser.email || '';
+                }
+
+                if (userRoleElement) {
+                    userRoleElement.textContent = (this.currentUser.role || 'user').charAt(0).toUpperCase() + (this.currentUser.role || 'user').slice(1);
+                }
+
+                if (authStatusElement) {
+                    authStatusElement.textContent = 'Signed in with JWT token';
+                }
+            }
+
+            this.showScreen('settings-screen');
+        } catch (error) {
+            console.error('Failed to load settings screen:', error);
+            this.showScreen('settings-screen'); // Show anyway
         }
     }
 

@@ -19,38 +19,26 @@
             </div>
         </div>
 
-        <!-- API Key Setup Screen -->
-        <div id="api-key-setup" class="screen hidden">
+        <!-- Login Redirect Screen -->
+        <div id="login-redirect" class="screen hidden">
             <div class="login-container">
                 <div class="login-header">
                     <img src="icons/icon32.svg" alt="Carver Agents" class="login-logo">
                     <h1 class="login-brand">Carver Agents</h1>
                     <p class="login-subtitle">Real-time Contextual Intelligence<br />Anytime, Anywhere</p>
                 </div>
-                
+
                 <div class="login-form">
-                    <h2 class="login-title">Log in</h2>
-                    
-                    <div class="form-group">
-                        <div class="input-with-button">
-                            <input type="password" id="api-key-input" placeholder="Enter your API key">
-                            <button type="button" id="toggle-api-key-visibility" class="input-show-btn">
-                                Show
-                            </button>
-                        </div>
-                        <div id="api-key-error" class="error-message hidden"></div>
-                    </div>
-                    
-                    <p class="api-key-help">
-                        Don't have an API key? Email us at 
-                        <a href="mailto:support@carveragents.ai">support@carveragents.ai</a>
+                    <h2 class="login-title">Authentication Required</h2>
+
+                    <p style="text-align: center; margin-bottom: 24px; color: #6b7280;">
+                        Please sign in to access your dashboard
                     </p>
-                    
-                    <button id="validate-api-key" class="btn btn-primary login-btn">
-                        <span class="btn-text">Continue</span>
-                        <div class="btn-spinner hidden"></div>
+
+                    <button id="go-to-login" class="btn btn-primary login-btn">
+                        <span class="btn-text">Sign In</span>
                     </button>
-                    
+
                     <!-- Hidden environment selector - keeping for functionality -->
                     <select id="host-select" style="display: none;">
                         <option value="https://app.carveragents.ai">Production (app.carveragents.ai)</option>
@@ -58,10 +46,10 @@
                         <option value="http://localhost:8000">Local Development (localhost:8000)</option>
                     </select>
                 </div>
-                
+
                 <div class="login-footer">
                     <p class="footer-text">
-                        By logging in, you acknowledge that you have read and understood, and agree to 
+                        By logging in, you acknowledge that you have read and understood, and agree to
                         Carver Agents' <a href="https://carveragents.ai/terms-and-conditions" target="_blank">Terms</a> and <a href="https://carveragents.ai/privacy-policy" target="_blank">Privacy Policy</a>.
                     </p>
                     <p class="website-link">
@@ -598,13 +586,15 @@
                 <div class="settings-section">
                     <h3>Account</h3>
                     <div class="setting-item">
-                        <label>API Key</label>
-                        <div class="api-key-display">
-                            <span id="masked-api-key">••••••••••••••••</span>
-                            <button id="show-api-key" class="btn btn-small">Show</button>
+                        <label>Authentication</label>
+                        <div class="auth-status">
+                            <span id="auth-status-text">Signed in with JWT token</span>
                         </div>
                     </div>
-                    <button id="change-api-key" class="btn btn-secondary" style="display: none;">Change API Key</button>
+                    <div class="setting-item">
+                        <label>Role</label>
+                        <span id="user-role">Loading...</span>
+                    </div>
                 </div>
 
                 <!-- <div class="settings-section">
@@ -644,6 +634,9 @@
     <div id="toast-container"></div>
 
     <script src="js/version.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/web-auth-bridge.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/sidepanel.js"></script>
 </body>
 </html>
